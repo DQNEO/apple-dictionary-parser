@@ -21,12 +21,9 @@ func check(err error) {
 	}
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Please specify a dictionary body file\n")
-		os.Exit(1)
-	}
-	var filePath = os.Args[1]
+func parseBinaryFile(filePath string) []*bytes.Buffer {
+	var chunks []*bytes.Buffer
+
 	data, err := os.ReadFile(filePath)
 	check(err)
 	br := bytes.NewReader(data)
@@ -36,15 +33,17 @@ func main() {
 		var header = make([]byte, 2)
 		_, err = br.Read(header)
 		if err == io.EOF {
-			return
+			return chunks
 		}
 		check(err)
 		if header[0] == 0x78 && header[1] == 0xda { // check if it's a zlib magic header
 			br.UnreadByte()
 			br.UnreadByte()
+			var buf = new(bytes.Buffer)
 			r, err := zlib.NewReader(br)
 			check(err)
-			_, err = io.Copy(os.Stdout, r)
+			_, err = io.Copy(buf, r)
+			chunks = append(chunks, buf)
 			check(err)
 			r.Close()
 			_, err = br.Seek(12, io.SeekCurrent) // skip magic 12 bytes
@@ -54,7 +53,20 @@ func main() {
 			}
 			check(err)
 		} else {
-			return
+			return chunks
 		}
+	}
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Fprintf(os.Stderr, "Please specify a dictionary body file\n")
+		os.Exit(1)
+	}
+	var filePath = os.Args[1]
+	chunks := parseBinaryFile(filePath)
+	for _, chunk := range chunks {
+		_, err := io.Copy(os.Stdout, chunk)
+		check(err)
 	}
 }
