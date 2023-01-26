@@ -77,6 +77,27 @@ func parseChunk(chunk *bytes.Buffer) [][]byte {
 	}
 }
 
+type Entry struct {
+	Title string
+	Body  []byte
+}
+
+const titleStartMarker = `d:title="`
+const bodyStartMarker = `" class="entry">`
+
+func parseEntry(entry []byte) *Entry {
+	titleStart := bytes.Index(entry, []byte(titleStartMarker)) + len(titleStartMarker)
+	titleLen := bytes.Index(entry[titleStart:], []byte(`"`))
+	title := entry[titleStart : titleStart+titleLen]
+	bodyStart := bytes.Index(entry, []byte(bodyStartMarker)) + len(bodyStartMarker)
+	body := entry[bodyStart:]
+	e := &Entry{
+		Title: string(title),
+		Body:  body,
+	}
+	return e
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Please specify a dictionary body file\n")
@@ -86,10 +107,17 @@ func main() {
 	chunks := parseBinaryFile(filePath)
 	for _, chunk := range chunks {
 		//os.Stdout.Write([]byte("============\n"))
+		os.Stdout.Write([]byte("\n\n\n"))
 		entries := parseChunk(chunk)
 		for _, entry := range entries {
 			//os.Stdout.Write([]byte("-----\n"))
-			os.Stdout.Write(entry)
+			e := parseEntry(entry)
+			fmt.Printf("[%s]	\n", e.Title)
+			if e.Title == "°" { // last title
+				return
+			}
+			//os.Stdout.Write(entry)
+			//os.Stdout.Write([]byte{'\n'})
 		}
 	}
 }
