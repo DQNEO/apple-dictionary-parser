@@ -58,6 +58,25 @@ func parseBinaryFile(filePath string) []*bytes.Buffer {
 	}
 }
 
+func parseChunk(chunk *bytes.Buffer) [][]byte {
+	var entries [][]byte
+	chunk.Next(4)
+	buf := chunk.Bytes()
+	for {
+		idx := bytes.IndexByte(buf, '\n')
+		if idx > -1 {
+			entry := buf[0:idx]
+			entries = append(entries, entry)
+			if idx+5 >= len(buf) {
+				return entries
+			}
+			buf = buf[idx+5:]
+		} else {
+			return entries
+		}
+	}
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Please specify a dictionary body file\n")
@@ -66,7 +85,11 @@ func main() {
 	var filePath = os.Args[1]
 	chunks := parseBinaryFile(filePath)
 	for _, chunk := range chunks {
-		_, err := io.Copy(os.Stdout, chunk)
-		check(err)
+		//os.Stdout.Write([]byte("============\n"))
+		entries := parseChunk(chunk)
+		for _, entry := range entries {
+			//os.Stdout.Write([]byte("-----\n"))
+			os.Stdout.Write(entry)
+		}
 	}
 }
