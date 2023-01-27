@@ -2,14 +2,14 @@ DICT_FILE = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_d
 
 all: out/noad.html out/noad.parsed.txt
 
-out/noad.html: out/noad.raw.txt parse.go
+out/noad.html: out/noad.dump parse.go
 	go run parse.go --mode=html $<   > $@
 
-out/noad.parsed.txt: out/noad.raw.txt parse.go
+out/noad.parsed.txt: out/noad.dump parse.go
 	go run parse.go --mode=text  $< text  > $@
 
 out/noad.raw.txt: extract.go
 	 go run extract.go $(DICT_FILE) > $@
 
 clean:
-	rm out/*.html out/*.txt
+	rm out/*.html out/*.txt out/noad.dump
