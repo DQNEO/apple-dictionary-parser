@@ -3,7 +3,7 @@ DICT_FILE = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_d
 all: out/noad.html out/noad.parsed.txt
 
 out/noad.html: out/noad.raw.txt parse.go
-	go run parse.go $< html   > $@
+	go run parse.go $< html  > $@
 
 out/noad.parsed.txt: out/noad.raw.txt parse.go
 	go run parse.go $< text  > $@
