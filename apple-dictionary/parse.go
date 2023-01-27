@@ -70,8 +70,7 @@ func main() {
 }
 
 func renderHTML(entries []*RawEntry) {
-	const htmlHeader = `
-<!doctype html>
+	const htmlHeader = `<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
