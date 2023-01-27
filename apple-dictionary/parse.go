@@ -8,6 +8,11 @@ import (
 	"github.com/beevik/etree"
 )
 
+type RawEntry struct {
+	Title string
+	Body  []byte
+}
+
 type ParsedEntry struct {
 	Title       string
 	HG          *etree.Element
@@ -19,7 +24,51 @@ type ParsedEntry struct {
 	Note        *etree.Element
 }
 
-const htmlHeader = `
+func parseDumpFile(path string) []*RawEntry {
+	var r []*RawEntry
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	lines := bytes.Split(contents, []byte{'\n'})
+	for _, line := range lines[:] {
+		if len(line) == 0 {
+			// Possibly end of file
+			continue
+		}
+		ttlBytes, rawBody, found := bytes.Cut(line, []byte(":::"))
+		if !found {
+			panic("failed to Cut:" + (string(line)))
+		}
+		title := string(ttlBytes)
+		e := &RawEntry{
+			Title: title,
+			Body:  rawBody,
+		}
+		r = append(r, e)
+	}
+	return r
+}
+
+var mode string // html or text
+
+func main() {
+	rawDumpFile := os.Args[1]
+	mode = os.Args[2]
+	entries := parseDumpFile(rawDumpFile)
+	//println(len(entries))
+	switch mode {
+	case "html":
+		renderHTML(entries[1000:2000])
+	case "text":
+		renderText(entries)
+	default:
+		panic("Invalid mode")
+	}
+}
+
+func renderHTML(entries []*RawEntry) {
+	const htmlHeader = `
 <!doctype html>
 <html lang="en">
 <head>
@@ -45,27 +94,18 @@ const htmlHeader = `
 </head>
 <body>
 `
-
-func main() {
-	rawDumpFile := os.Args[1]
-	all, err := os.ReadFile(rawDumpFile)
-	if err != nil {
-		panic(err)
+	fmt.Print(htmlHeader)
+	for _, ent := range entries {
+		fmt.Println(string(ent.Body))
 	}
-	entries := bytes.Split(all, []byte{'\n'})
-	for _, ent := range entries[:] {
-		if len(ent) == 0 {
-			// Possibly end of file
-			continue
-		}
-		ttlBytes, rawBody, found := bytes.Cut(ent, []byte(":::"))
-		if !found {
-			panic("failed to Cut:" + (string(ent)))
-		}
-		title := string(ttlBytes)
+	fmt.Print("</body>\n</html>\n")
+}
 
+func renderText(entries []*RawEntry) {
+	for _, ent := range entries {
+		title := ent.Title
 		doc := etree.NewDocument()
-		err = doc.ReadFromBytes(rawBody)
+		err := doc.ReadFromBytes(ent.Body)
 		if err != nil {
 			panic(err)
 		}
