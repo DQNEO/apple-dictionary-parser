@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/beevik/etree"
 )
@@ -54,6 +55,7 @@ func parseDumpFile(path string) []*RawEntry {
 }
 
 var flagMode = flag.String("mode", "", "output format (html or text)")
+var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 
 func main() {
 	flag.Parse()
@@ -62,7 +64,8 @@ func main() {
 	//println(len(entries))
 	switch *flagMode {
 	case "html":
-		renderHTML(entries[1000:2000])
+		words := strings.Split(*flagWords, ",")
+		renderHTML(entries, words)
 	case "text":
 		renderText(entries)
 	default:
@@ -70,7 +73,12 @@ func main() {
 	}
 }
 
-func renderHTML(entries []*RawEntry) {
+func renderHTML(entries []*RawEntry, words []string) {
+	println("words=", words)
+	var mapWords = make(map[string]bool, len(words))
+	for _, w := range words {
+		mapWords[w] = true
+	}
 	const htmlHeader = `<!doctype html>
 <html lang="en">
 <head>
@@ -98,7 +106,9 @@ func renderHTML(entries []*RawEntry) {
 `
 	fmt.Print(htmlHeader)
 	for _, ent := range entries {
-		fmt.Println(string(ent.Body))
+		if mapWords[ent.Title] {
+			fmt.Println(string(ent.Body))
+		}
 	}
 	fmt.Print("</body>\n</html>\n")
 }
