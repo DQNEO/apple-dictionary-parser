@@ -89,11 +89,11 @@ func parseEntry(entry []byte) *Entry {
 	titleStart := bytes.Index(entry, []byte(titleStartMarker)) + len(titleStartMarker)
 	titleLen := bytes.Index(entry[titleStart:], []byte(`"`))
 	title := entry[titleStart : titleStart+titleLen]
-	bodyStart := bytes.Index(entry, []byte(bodyStartMarker)) + len(bodyStartMarker)
-	body := entry[bodyStart:]
+	//bodyStart := bytes.Index(entry, []byte(bodyStartMarker)) + len(bodyStartMarker)
+	//body := entry[bodyStart : len(entry)-len("</d:entry>")]
 	e := &Entry{
 		Title: string(title),
-		Body:  body,
+		Body:  entry,
 	}
 	return e
 }
@@ -106,18 +106,13 @@ func main() {
 	var filePath = os.Args[1]
 	chunks := parseBinaryFile(filePath)
 	for _, chunk := range chunks {
-		//os.Stdout.Write([]byte("============\n"))
-		os.Stdout.Write([]byte("\n\n\n"))
 		rawEntries := parseChunk(chunk)
 		for _, rawEntry := range rawEntries {
-			//os.Stdout.Write([]byte("-----\n"))
 			e := parseEntry(rawEntry)
-			fmt.Printf("[%s]	\n", e.Title)
+			fmt.Printf("%s:::%s\n", e.Title, e.Body)
 			if e.Title == "°" { // last title
 				return
 			}
-			//os.Stdout.Write(rawEntry)
-			//os.Stdout.Write([]byte{'\n'})
 		}
 	}
 }
