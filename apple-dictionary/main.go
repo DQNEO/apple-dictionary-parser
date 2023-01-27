@@ -21,8 +21,8 @@ func check(err error) {
 	}
 }
 
-func parseBinaryFile(filePath string) []*bytes.Buffer {
-	var chunks []*bytes.Buffer
+func parseBinaryFile(filePath string) [][]byte {
+	var chunks [][]byte
 
 	data, err := os.ReadFile(filePath)
 	check(err)
@@ -39,10 +39,10 @@ func parseBinaryFile(filePath string) []*bytes.Buffer {
 		if header[0] == 0x78 && header[1] == 0xda { // check if it's a zlib magic header
 			br.UnreadByte()
 			br.UnreadByte()
-			var buf = new(bytes.Buffer)
 			r, err := zlib.NewReader(br)
 			check(err)
-			_, err = io.Copy(buf, r)
+			buf, err := io.ReadAll(r)
+			check(err)
 			chunks = append(chunks, buf)
 			check(err)
 			r.Close()
@@ -58,10 +58,9 @@ func parseBinaryFile(filePath string) []*bytes.Buffer {
 	}
 }
 
-func parseChunk(chunk *bytes.Buffer) [][]byte {
+func parseChunk(buf []byte) [][]byte {
 	var entries [][]byte
-	chunk.Next(4)
-	buf := chunk.Bytes()
+	buf = buf[4:]
 	for {
 		idx := bytes.IndexByte(buf, '\n')
 		if idx > -1 {
@@ -83,19 +82,16 @@ type Entry struct {
 }
 
 const titleStartMarker = `d:title="`
-const bodyStartMarker = `" class="entry">`
 
 func parseEntry(entry []byte) *Entry {
 	titleStart := bytes.Index(entry, []byte(titleStartMarker)) + len(titleStartMarker)
 	titleLen := bytes.Index(entry[titleStart:], []byte(`"`))
 	title := entry[titleStart : titleStart+titleLen]
-	//bodyStart := bytes.Index(entry, []byte(bodyStartMarker)) + len(bodyStartMarker)
-	//body := entry[bodyStart : len(entry)-len("</d:entry>")]
-	e := &Entry{
+
+	return &Entry{
 		Title: string(title),
 		Body:  entry,
 	}
-	return e
 }
 
 func main() {
