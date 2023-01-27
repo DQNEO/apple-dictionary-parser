@@ -94,6 +94,8 @@ func parseEntry(entry []byte) *Entry {
 	}
 }
 
+const DLMT = "\t"
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Please specify a dictionary body file\n")
@@ -105,7 +107,7 @@ func main() {
 		rawEntries := parseChunk(chunk)
 		for _, rawEntry := range rawEntries {
 			e := parseEntry(rawEntry)
-			fmt.Printf("%s:::%s\n", e.Title, e.Body)
+			fmt.Printf("%s%s%s\n", e.Title, DLMT, e.Body)
 			if e.Title == "°" { // last title
 				return
 			}

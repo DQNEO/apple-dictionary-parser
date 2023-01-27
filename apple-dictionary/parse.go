@@ -8,6 +8,8 @@ import (
 	"github.com/beevik/etree"
 )
 
+const SPLT = "\t"
+
 type RawEntry struct {
 	Title string
 	Body  []byte
@@ -36,7 +38,7 @@ func parseDumpFile(path string) []*RawEntry {
 			// Possibly end of file
 			continue
 		}
-		ttlBytes, rawBody, found := bytes.Cut(line, []byte(":::"))
+		ttlBytes, rawBody, found := bytes.Cut(line, []byte(SPLT))
 		if !found {
 			panic("failed to Cut:" + (string(line)))
 		}
