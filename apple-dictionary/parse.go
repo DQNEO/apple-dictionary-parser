@@ -56,15 +56,17 @@ func parseDumpFile(path string) []*RawEntry {
 
 var flagMode = flag.String("mode", "", "output format (html or text)")
 var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
+var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
 
 func main() {
 	flag.Parse()
 	rawDumpFile := flag.Arg(0)
 	entries := parseDumpFile(rawDumpFile)
+
 	//println(len(entries))
 	switch *flagMode {
 	case "html":
-		words := strings.Split(*flagWords, ",")
+		words := getWords(*flagWords, *flagWordsFile)
 		renderHTML(entries, words)
 	case "text":
 		renderText(entries)
@@ -73,11 +75,30 @@ func main() {
 	}
 }
 
+func getWords(csv string, file string) []string {
+	if csv != "" && file != "" {
+		panic("Please do not specify both words and words-file at the same time")
+	}
+	if csv != "" {
+		return strings.Split(*flagWords, ",")
+	}
+	if file != "" {
+		contents, err := os.ReadFile(file)
+		if err != nil {
+			panic(err)
+		}
+		return strings.Split(string(contents), "\n")
+	}
+	return nil
+}
+
 func renderHTML(entries []*RawEntry, words []string) {
 	println("words=", words)
 	var mapWords = make(map[string]bool, len(words))
 	for _, w := range words {
-		mapWords[strings.ToLower(w)] = true
+		if len(w) > 0 {
+			mapWords[strings.ToLower(w)] = true
+		}
 	}
 	const htmlHeader = `<!doctype html>
 <html lang="en">
@@ -112,7 +133,7 @@ func renderHTML(entries []*RawEntry, words []string) {
 `
 	fmt.Print(htmlHeader)
 	for _, ent := range entries {
-		if mapWords[strings.ToLower(ent.Title)] {
+		if len(words) == 0 || mapWords[strings.ToLower(ent.Title)] {
 			fmt.Println(string(ent.Body))
 		}
 	}
