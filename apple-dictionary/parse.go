@@ -100,7 +100,13 @@ func renderHTML(entries []*RawEntry, words []string) {
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     <link rel="stylesheet" href="DefaultStyle.css">
-
+    <style>
+	.entry {
+		padding-bottom: 1em;
+		margin-bottom:0;
+		border-bottom: 1px solid;
+	}
+	</style>
 </head>
 <body>
 `
