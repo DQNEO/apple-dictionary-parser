@@ -19,6 +19,33 @@ type ParsedEntry struct {
 	Note        *etree.Element
 }
 
+const htmlHeader = `
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>A Basic HTML5 Template</title>
+    <meta name="description" content="A simple HTML5 Template for new projects.">
+    <meta name="author" content="SitePoint">
+
+    <meta property="og:title" content="A Basic HTML5 Template">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.sitepoint.com/a-basic-html5-template/">
+    <meta property="og:description" content="A simple HTML5 Template for new projects.">
+    <meta property="og:image" content="image.png">
+
+    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <link rel="stylesheet" href="DefaultStyle.css">
+
+</head>
+<body>
+`
+
 func main() {
 	rawDumpFile := os.Args[1]
 	all, err := os.ReadFile(rawDumpFile)
@@ -26,72 +53,72 @@ func main() {
 		panic(err)
 	}
 	entries := bytes.Split(all, []byte{'\n'})
-	fmt.Printf("children,hg,sg,phrases,phverbse,derivatives,text\n")
 	for _, ent := range entries[:] {
 		if len(ent) == 0 {
 			// Possibly end of file
 			continue
 		}
-		title, rawBody, found := bytes.Cut(ent, []byte(":::"))
+		ttlBytes, rawBody, found := bytes.Cut(ent, []byte(":::"))
 		if !found {
 			panic("failed to Cut:" + (string(ent)))
 		}
+		title := string(ttlBytes)
 
-		_ = title
-		//var d interface{}
 		doc := etree.NewDocument()
 		err = doc.ReadFromBytes(rawBody)
 		if err != nil {
 			panic(err)
 		}
 
-		//os.Stdout.Write(title)
-		//fmt.Print(":::")
-		//		children := doc.Child[1].(*etree.Element).Child
 		child := doc.Child[0].(*etree.Element)
 		numChildren := len(child.Child)
 		if numChildren < 2 || 7 < numChildren {
 			panic("Unexpected number of children")
 		}
-		fmt.Printf("children=%d,", len(child.Child))
-		var ss [7]string
+		pe := &ParsedEntry{Title: title}
 		for _, ch := range child.Child {
 			elm := ch.(*etree.Element)
 			if elm.Tag != "span" {
-				panic("unexpected tag:" + elm.Tag + " --- " + string(title))
+				panic("unexpected tag:" + elm.Tag + " --- " + title)
 			}
 			class := elm.SelectAttr("class").Value
-			pe := &ParsedEntry{Title: string(title)}
 			switch class {
 			case "hg x_xh0":
-				ss[0] = class
 				pe.HG = elm
 			case "sg":
-				ss[1] = class
 				pe.SG = elm
 			case "subEntryBlock x_xo0 t_phrases":
-				ss[2] = class
 				pe.Phrases = elm
 			case "subEntryBlock x_xo0 t_phrasalVerbs":
-				ss[3] = class
 				pe.PhVerbs = elm
 			case "subEntryBlock x_xo0 t_derivatives":
-				ss[4] = class
 				pe.Derivatives = elm
 			case "etym x_xo0":
-				ss[5] = class
 				pe.Etym = elm
 			case "note x_xo0":
-				ss[6] = class
 				pe.Note = elm
 			default:
-				panic("unexpected class:" + class + " --- " + string(title))
+				panic("unexpected class:" + class + " --- " + title)
 			}
 
 		}
-		fmt.Printf("%s,%s,%s,%s,%s,%s,%s,%s", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5], ss[6], string(title))
-		//fmt.Printf("[%s]", title)
-		//		dump.P(child.Child)
-		fmt.Print("\n")
+		asText(pe)
 	}
+}
+
+func asText(pe *ParsedEntry) {
+	fmt.Printf("---\n%s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n",
+		pe.Title, S(pe.HG), S(pe.SG), S(pe.Phrases), S(pe.PhVerbs), S(pe.Derivatives), S(pe.Etym), S(pe.Note))
+}
+
+func S(elm *etree.Element) string {
+	if elm == nil {
+		return ""
+	}
+	elms := elm.FindElements("./")
+	var s string
+	for _, e := range elms {
+		s += e.Text()
+	}
+	return s
 }
