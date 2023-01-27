@@ -150,7 +150,7 @@ func renderText(entries []*RawEntry) {
 			case "note x_xo0":
 				pe.Note = elm
 			default:
-				panic("unexpected class:" + class + " --- " + title)
+				panic(fmt.Sprintf(`unexpected class: "%s" in entry "%s"`, class, title))
 			}
 
 		}
