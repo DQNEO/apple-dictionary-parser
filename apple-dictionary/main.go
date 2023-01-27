@@ -108,15 +108,15 @@ func main() {
 	for _, chunk := range chunks {
 		//os.Stdout.Write([]byte("============\n"))
 		os.Stdout.Write([]byte("\n\n\n"))
-		entries := parseChunk(chunk)
-		for _, entry := range entries {
+		rawEntries := parseChunk(chunk)
+		for _, rawEntry := range rawEntries {
 			//os.Stdout.Write([]byte("-----\n"))
-			e := parseEntry(entry)
+			e := parseEntry(rawEntry)
 			fmt.Printf("[%s]	\n", e.Title)
 			if e.Title == "°" { // last title
 				return
 			}
-			//os.Stdout.Write(entry)
+			//os.Stdout.Write(rawEntry)
 			//os.Stdout.Write([]byte{'\n'})
 		}
 	}
