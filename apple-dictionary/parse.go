@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"os"
 
@@ -52,14 +53,14 @@ func parseDumpFile(path string) []*RawEntry {
 	return r
 }
 
-var mode string // html or text
+var flagMode = flag.String("mode", "", "output format (html or text)")
 
 func main() {
-	rawDumpFile := os.Args[1]
-	mode = os.Args[2]
+	flag.Parse()
+	rawDumpFile := flag.Arg(0)
 	entries := parseDumpFile(rawDumpFile)
 	//println(len(entries))
-	switch mode {
+	switch *flagMode {
 	case "html":
 		renderHTML(entries[1000:2000])
 	case "text":
