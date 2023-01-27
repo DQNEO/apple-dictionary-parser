@@ -2,10 +2,22 @@ package main
 
 import (
 	"bytes"
-	"encoding/xml"
 	"fmt"
 	"os"
+
+	"github.com/beevik/etree"
 )
+
+type ParsedEntry struct {
+	Title       string
+	HG          *etree.Element
+	SG          *etree.Element
+	Phrases     *etree.Element
+	PhVerbs     *etree.Element
+	Derivatives *etree.Element
+	Etym        *etree.Element
+	Note        *etree.Element
+}
 
 func main() {
 	rawDumpFile := os.Args[1]
@@ -14,7 +26,8 @@ func main() {
 		panic(err)
 	}
 	entries := bytes.Split(all, []byte{'\n'})
-	for _, ent := range entries {
+	fmt.Printf("children,hg,sg,phrases,phverbse,derivatives,text\n")
+	for _, ent := range entries[:] {
 		if len(ent) == 0 {
 			// Possibly end of file
 			continue
@@ -25,19 +38,60 @@ func main() {
 		}
 
 		_ = title
-		var d interface{}
-		rawBody = []byte(`<?xml version="1.0" encoding="UTF-8" ?>
-<d:entry xmlns:d="http://www.apple.com/DTDs/DictionaryService-1.0.rng" id="m_en_gbus1179660" d:title="007" class="entry"><span class="hg x_xh0"><span role="text" class="hw">007 </span><span dialect="AmE" prxid="007_us_5d24" prlexid="optra0156151.002" class="prx"> | <span d:prn="US" dialect="AmE" class="ph t_respell">ˌdəbəl ˌō ˈsevən<d:prn></d:prn></span><span d:prn="IPA" dialect="AmE" soundFile="007#_us_1" media="online" class="ph">ˌdəbəl ˌoʊ ˈsɛvən<d:prn></d:prn></span> | </span></span><span class="sg"><span id="m_en_gbus1179660.005" class="se1 x_xd0"><span role="text" class="posg x_xdh"><span d:pos="1" class="pos"><span class="gp tg_pos">noun </span><d:pos></d:pos></span></span><span id="m_en_gbus1179660.006" class="msDict x_xd1 t_core"><span d:def="1" role="text" class="df">the fictional British secret agent James Bond, or someone based on, inspired by, or reminiscent of him<span class="gp tg_df">. </span><d:def></d:def></span></span></span></span></d:entry>
-`)
-		err := xml.Unmarshal(rawBody, &d)
+		//var d interface{}
+		doc := etree.NewDocument()
+		err = doc.ReadFromBytes(rawBody)
 		if err != nil {
 			panic(err)
 		}
 
 		//os.Stdout.Write(title)
 		//fmt.Print(":::")
-		fmt.Printf("%v", d)
-		//fmt.Print("\n")
-		return
+		//		children := doc.Child[1].(*etree.Element).Child
+		child := doc.Child[0].(*etree.Element)
+		numChildren := len(child.Child)
+		if numChildren < 2 || 7 < numChildren {
+			panic("Unexpected number of children")
+		}
+		fmt.Printf("children=%d,", len(child.Child))
+		var ss [7]string
+		for _, ch := range child.Child {
+			elm := ch.(*etree.Element)
+			if elm.Tag != "span" {
+				panic("unexpected tag:" + elm.Tag + " --- " + string(title))
+			}
+			class := elm.SelectAttr("class").Value
+			pe := &ParsedEntry{Title: string(title)}
+			switch class {
+			case "hg x_xh0":
+				ss[0] = class
+				pe.HG = elm
+			case "sg":
+				ss[1] = class
+				pe.SG = elm
+			case "subEntryBlock x_xo0 t_phrases":
+				ss[2] = class
+				pe.Phrases = elm
+			case "subEntryBlock x_xo0 t_phrasalVerbs":
+				ss[3] = class
+				pe.PhVerbs = elm
+			case "subEntryBlock x_xo0 t_derivatives":
+				ss[4] = class
+				pe.Derivatives = elm
+			case "etym x_xo0":
+				ss[5] = class
+				pe.Etym = elm
+			case "note x_xo0":
+				ss[6] = class
+				pe.Note = elm
+			default:
+				panic("unexpected class:" + class + " --- " + string(title))
+			}
+
+		}
+		fmt.Printf("%s,%s,%s,%s,%s,%s,%s,%s", ss[0], ss[1], ss[2], ss[3], ss[4], ss[5], ss[6], string(title))
+		//fmt.Printf("[%s]", title)
+		//		dump.P(child.Child)
+		fmt.Print("\n")
 	}
 }
