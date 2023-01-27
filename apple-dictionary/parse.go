@@ -77,7 +77,7 @@ func renderHTML(entries []*RawEntry, words []string) {
 	println("words=", words)
 	var mapWords = make(map[string]bool, len(words))
 	for _, w := range words {
-		mapWords[w] = true
+		mapWords[strings.ToLower(w)] = true
 	}
 	const htmlHeader = `<!doctype html>
 <html lang="en">
@@ -106,7 +106,7 @@ func renderHTML(entries []*RawEntry, words []string) {
 `
 	fmt.Print(htmlHeader)
 	for _, ent := range entries {
-		if mapWords[ent.Title] {
+		if mapWords[strings.ToLower(ent.Title)] {
 			fmt.Println(string(ent.Body))
 		}
 	}
