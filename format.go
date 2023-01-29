@@ -68,6 +68,29 @@ func main() {
 	case "html":
 		words := getWords(*flagWords, *flagWordsFile)
 		renderHTML(entries, words)
+	case "htmlsplit":
+		outDir := flag.Arg(1)
+		var names = [...]string{"0", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
+		var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
+		for _, name := range names {
+			f, err := os.Create(fmt.Sprintf("%s/%s.html", outDir, name))
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+			files[name[0]] = f
+			f.Write([]byte(htmlHeader))
+		}
+		for _, ent := range entries {
+			t := ent.Title[0]
+			f, found := files[t]
+			if !found {
+				f = files[0]
+			}
+			f.Write(ent.Body)
+		}
+
+		fmt.Print([]byte(htmlFooter))
 	case "text":
 		renderText(entries)
 	default:
