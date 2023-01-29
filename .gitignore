@@ -1,4 +1,5 @@
 /out/*.txt
+/out/*.dump
 /out/*.css
 /out/*.html
 
