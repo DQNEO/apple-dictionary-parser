@@ -26,7 +26,7 @@ out/noad.sample2.html: out/noad.dump out/DefaultStyle.css out/customize.css form
 	./format --mode=html --words-file=words-sample.txt  $<   > $@
 
 out/noad.parsed.txt: out/noad.dump format
-	./format --mode=text  $< text  > $@
+	./format --mode=text  $< > $@
 
 out/a.html: out/noad.dump format
 	./format --mode=htmlsplit $< out
