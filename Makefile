@@ -9,17 +9,24 @@ out/DefaultStyle.css:
 out/customize.css: customize.css
 	cp customize.css $@
 
-out/noad.dump.txt: extract.go
-	 go run extract.go "${DICT_FILE}" > $@
 
-out/noad.sample1.html: out/noad.dump.txt out/DefaultStyle.css out/customize.css format.go html_template.go
-	go run format.go html_template.go --words=happiness,joy,felicity,pleasure --mode=html $<   > $@
+extract: extract.go
+	go build -o $@ $<
 
-out/noad.sample2.html: out/noad.dump.txt out/DefaultStyle.css out/customize.css format.go html_template.go
-	go run format.go  html_template.go --words-file=words-sample.txt --mode=html $<   > $@
+format: format.go html_template.go
+	go build -o $@ format.go html_template.go
+
+out/noad.dump.txt: extract
+	 ./extract "${DICT_FILE}" > $@
+
+out/noad.sample1.html: out/noad.dump.txt out/DefaultStyle.css out/customize.css format
+	./format --words=happiness,joy,felicity,pleasure --mode=html $<   > $@
+
+out/noad.sample2.html: out/noad.dump.txt out/DefaultStyle.css out/customize.css format
+	./format --words-file=words-sample.txt --mode=html $<   > $@
 
 out/noad.parsed.txt: out/noad.dump.txt format.go html_template.go
-	go run format.go  html_template.go --mode=text  $< text  > $@
+	./format --mode=text  $< text  > $@
 
 clean:
-	rm -f out/*.html out/*.txt out/*.css
+	rm -f out/*.html out/*.txt out/*.css extract format
