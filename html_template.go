@@ -9,13 +9,7 @@ const htmlHeader = `<!doctype html>
     <title>NOAD HTML</title>
 
     <link rel="stylesheet" href="DefaultStyle.css">
-    <style>
-	.entry {
-		padding-bottom: 1em;
-		margin-bottom:0;
-		border-bottom: 1px solid;
-	}
-	</style>
+    <link rel="stylesheet" href="customize.css">
 </head>
 <body>
 `
