@@ -73,14 +73,14 @@ func main() {
 		var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
 		var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
 		for _, letter := range letters {
-			fname := fmt.Sprintf("%s/%s.html", outDir, letter)
+			fname := fmt.Sprintf("%s/%s.html", outDir, string(letter))
 			f, err := os.Create(fname)
 			if err != nil {
 				panic(err)
 			}
 			defer f.Close()
 			files[letter] = f
-			f.Write([]byte(GenHtmlHeader("NOAD - " + string(letter+0x20))))
+			f.Write([]byte(GenHtmlHeader("NOAD - " + strings.ToUpper(string(letter)))))
 		}
 		for _, ent := range entries {
 			t := ent.Title[0]
