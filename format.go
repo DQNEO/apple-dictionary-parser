@@ -77,7 +77,10 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			defer f.Close()
+			defer func(f *os.File) {
+				f.Write([]byte(htmlFooter))
+				f.Close()
+			}(f)
 			files[letter] = f
 			f.Write([]byte(GenHtmlHeader("NOAD - " + strings.ToUpper(string(letter)))))
 		}
@@ -89,8 +92,6 @@ func main() {
 			}
 			f.Write(ent.Body)
 		}
-
-		fmt.Print([]byte(htmlFooter))
 	case "text":
 		renderText(entries)
 	default:
