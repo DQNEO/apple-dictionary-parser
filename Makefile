@@ -20,10 +20,10 @@ out/noad.dump: extract
 	 ./extract "${DICT_FILE}" > $@
 
 out/noad.sample1.html: out/noad.dump out/DefaultStyle.css out/customize.css format
-	./format --words=happiness,joy,felicity,pleasure --mode=html $<   > $@
+	./format --mode=html --words=happiness,joy,felicity,pleasure $<   > $@
 
 out/noad.sample2.html: out/noad.dump out/DefaultStyle.css out/customize.css format
-	./format --words-file=words-sample.txt --mode=html $<   > $@
+	./format --mode=html --words-file=words-sample.txt  $<   > $@
 
 out/noad.parsed.txt: out/noad.dump format
 	./format --mode=text  $< text  > $@
