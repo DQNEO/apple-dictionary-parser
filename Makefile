@@ -25,7 +25,7 @@ out/noad.sample1.html: out/noad.dump out/DefaultStyle.css out/customize.css form
 out/noad.sample2.html: out/noad.dump out/DefaultStyle.css out/customize.css format
 	./format --words-file=words-sample.txt --mode=html $<   > $@
 
-out/noad.parsed.txt: out/noad.dump format.go html_template.go
+out/noad.parsed.txt: out/noad.dump format
 	./format --mode=text  $< text  > $@
 
 clean:
