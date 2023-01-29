@@ -194,6 +194,7 @@ func renderText(entries []*RawEntry) {
 
 func asText(pe *ParsedEntry) {
 	hg := parseHG(pe.Title, pe.HG)
+	etym := parseEtym(pe.Title, pe.Etym)
 	//hgDump, err := yaml.Marshal(hg)
 	et := &EntryAsText{
 		Title: pe.Title,
@@ -204,13 +205,14 @@ func asText(pe *ParsedEntry) {
 		Phrases:     S(pe.Phrases),
 		PhVerbs:     S(pe.PhVerbs),
 		Derivatives: S(pe.Derivatives),
-		Etym:        S(pe.Etym),
+		Etym:        etym,
 		Note:        S(pe.Note),
 	}
 	d, err := yaml.Marshal(et)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("--")
 	fmt.Println(string(d))
 }
 
@@ -273,6 +275,19 @@ func parseHG(title string, eHG *etree.Element) *HG {
 		}
 	}
 	return hg
+}
+
+func assert(cnd bool, expect string) {
+	if !cnd {
+		panic("Assertion failed. Expect " + expect)
+	}
+}
+func parseEtym(title string, e *etree.Element) string {
+	if e == nil {
+		return ""
+	}
+	assert(len(e.Child) == 2, "etym children should be 2")
+	return S(e.Child[1].(*etree.Element))
 }
 
 func dumpTokens(tokens []etree.Token) string {
