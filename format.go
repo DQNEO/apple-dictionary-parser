@@ -70,16 +70,17 @@ func main() {
 		renderHTML(entries, words)
 	case "htmlsplit":
 		outDir := flag.Arg(1)
-		var names = [...]string{"0", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
+		var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
 		var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
-		for _, name := range names {
-			f, err := os.Create(fmt.Sprintf("%s/%s.html", outDir, name))
+		for _, letter := range letters {
+			fname := fmt.Sprintf("%s/%s.html", outDir, letter)
+			f, err := os.Create(fname)
 			if err != nil {
 				panic(err)
 			}
 			defer f.Close()
-			files[name[0]] = f
-			f.Write([]byte(htmlHeader))
+			files[letter] = f
+			f.Write([]byte(GenHtmlHeader("NOAD - " + string(letter+0x20))))
 		}
 		for _, ent := range entries {
 			t := ent.Title[0]
@@ -123,7 +124,7 @@ func renderHTML(entries []*RawEntry, words []string) {
 			mapWords[strings.ToLower(w)] = true
 		}
 	}
-	fmt.Print(htmlHeader)
+	fmt.Print(GenHtmlHeader("NOAD HTML as one file"))
 	for _, ent := range entries {
 		if len(words) == 0 || mapWords[strings.ToLower(ent.Title)] {
 			fmt.Println(string(ent.Body))
