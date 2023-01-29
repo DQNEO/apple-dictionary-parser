@@ -6,7 +6,7 @@ all: out/noad.sample1.html out/noad.sample2.html out/noad.parsed.txt
 out/DefaultStyle.css:
 	DIR=`dirname "${DICT_FILE}"`; cp "$$DIR/DefaultStyle.css" out/
 
-out/customize.css:
+out/customize.css: customize.css
 	cp customize.css $@
 
 out/noad.dump.txt: extract.go
