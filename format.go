@@ -63,7 +63,6 @@ func main() {
 	rawDumpFile := flag.Arg(0)
 	entries := parseDumpFile(rawDumpFile)
 
-	//println(len(entries))
 	switch *flagMode {
 	case "html":
 		words := getWords(*flagWords, *flagWordsFile)
@@ -117,7 +116,6 @@ func getWords(csv string, file string) []string {
 }
 
 func renderHTML(entries []*RawEntry, words []string) {
-	println("words=", words)
 	var mapWords = make(map[string]bool, len(words))
 	for _, w := range words {
 		if len(w) > 0 {
