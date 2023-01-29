@@ -10,13 +10,13 @@ out/noad.dump.txt: extract.go
 	 go run extract.go "${DICT_FILE}" > $@
 
 out/noad.sample1.html: out/noad.dump.txt out/DefaultStyle.css parse.go
-	go run parse.go --words=happiness,joy,felicity,pleasure --mode=html $<   > $@
+	go run parse.go html_template.go --words=happiness,joy,felicity,pleasure --mode=html $<   > $@
 
 out/noad.sample2.html: out/noad.dump.txt out/DefaultStyle.css parse.go
-	go run parse.go --words-file=words-sample.txt --mode=html $<   > $@
+	go run parse.go  html_template.go --words-file=words-sample.txt --mode=html $<   > $@
 
 out/noad.parsed.txt: out/noad.dump.txt parse.go
-	go run parse.go --mode=text  $< text  > $@
+	go run parse.go  html_template.go --mode=text  $< text  > $@
 
 clean:
 	rm -f out/*.html out/*.txt out/*.css
