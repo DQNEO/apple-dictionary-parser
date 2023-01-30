@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"os"
 	"strings"
 
@@ -16,19 +15,6 @@ const SPLT = "\t"
 type RawEntry struct {
 	Title string
 	Body  []byte
-}
-
-type EntryAsText struct {
-	Title string
-	//DEBUG_HG    string
-	X_Syllable  string
-	X_IPA       string
-	SG          string
-	Phrases     string
-	PhVerbs     string
-	Derivatives string
-	Etym        string
-	Note        string
 }
 
 type ParsedEntry struct {
@@ -186,34 +172,30 @@ func renderText(entries []*RawEntry) {
 			default:
 				panic(fmt.Sprintf(`unexpected class: "%s" in entry "%s"`, class, title))
 			}
-
 		}
-		asText(pe)
+		hg := parseHG(pe.Title, pe.HG)
+		etym := parseEtym(pe.Title, pe.Etym)
+		//hgDump, err := yaml.Marshal(hg)
+		et := map[string]string{
+			"word": pe.Title,
+			//HG:          string(hgDump),
+			"syll": hg.SYL_TXT,
+			"ipa":  hg.PRX,
+			"sg":   S(pe.SG),
+			"phr":  S(pe.Phrases),
+			"phv":  S(pe.PhVerbs),
+			"drv":  S(pe.Derivatives),
+			"etym": etym,
+			"note": S(pe.Note),
+		}
+		var fields []string
+		for k, v := range et {
+			if len(v) > 0 {
+				fields = append(fields, k+":"+v)
+			}
+		}
+		fmt.Println(strings.Join(fields, "\t"))
 	}
-}
-
-func asText(pe *ParsedEntry) {
-	hg := parseHG(pe.Title, pe.HG)
-	etym := parseEtym(pe.Title, pe.Etym)
-	//hgDump, err := yaml.Marshal(hg)
-	et := &EntryAsText{
-		Title: pe.Title,
-		//HG:          string(hgDump),
-		X_Syllable:  hg.SYL_TXT,
-		X_IPA:       hg.PRX,
-		SG:          S(pe.SG),
-		Phrases:     S(pe.Phrases),
-		PhVerbs:     S(pe.PhVerbs),
-		Derivatives: S(pe.Derivatives),
-		Etym:        etym,
-		Note:        S(pe.Note),
-	}
-	d, err := yaml.Marshal(et)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("--")
-	fmt.Println(string(d))
 }
 
 type HG struct {
