@@ -133,6 +133,39 @@ func renderHTML(entries []*RawEntry, words []string) {
 	fmt.Print(htmlFooter)
 }
 
+type Entry struct {
+	Title string
+	Syll  string
+	IPA   string
+	SG    string
+	Phr   string
+	Phv   string
+	Drv   string
+	Etym  string
+	Note  string
+}
+
+// To human readable line
+func (e *Entry) ToOneline() string {
+	var fields []string
+	fields = append(fields, "["+e.Title+"]")
+	if e.Syll != "" {
+		fields = append(fields, e.Syll)
+	}
+	if e.IPA != "" {
+		fields = append(fields, "|"+e.IPA+"|")
+	}
+	fields = append(fields, "{ "+e.SG+" }")
+	fields = append(fields, e.Phr)
+	fields = append(fields, e.Phv)
+	fields = append(fields, e.Drv)
+	if e.Etym != "" {
+		fields = append(fields, "<"+e.Etym+">")
+	}
+	fields = append(fields, e.Note)
+	return strings.Join(fields, " ")
+}
+
 func renderText(entries []*RawEntry) {
 	for _, ent := range entries {
 		title := ent.Title
@@ -176,25 +209,19 @@ func renderText(entries []*RawEntry) {
 		hg := parseHG(pe.Title, pe.HG)
 		etym := parseEtym(pe.Title, pe.Etym)
 		//hgDump, err := yaml.Marshal(hg)
-		et := map[string]string{
-			"word": pe.Title,
-			//HG:          string(hgDump),
-			"syll": hg.SYL_TXT,
-			"ipa":  hg.PRX,
-			"sg":   S(pe.SG),
-			"phr":  S(pe.Phrases),
-			"phv":  S(pe.PhVerbs),
-			"drv":  S(pe.Derivatives),
-			"etym": etym,
-			"note": S(pe.Note),
+		et := &Entry{
+			Title: pe.Title,
+			Syll:  hg.SYL_TXT,
+			IPA:   hg.PRX,
+			SG:    S(pe.SG),
+			Phr:   S(pe.Phrases),
+			Phv:   S(pe.PhVerbs),
+			Drv:   S(pe.Derivatives),
+			Etym:  etym,
+			Note:  S(pe.Note),
 		}
-		var fields []string
-		for k, v := range et {
-			if len(v) > 0 {
-				fields = append(fields, k+":"+v)
-			}
-		}
-		fmt.Println(strings.Join(fields, "\t"))
+
+		fmt.Println(et.ToOneline())
 	}
 }
 
