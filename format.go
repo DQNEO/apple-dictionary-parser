@@ -133,7 +133,7 @@ func renderHTML(entries []*RawEntry, words []string) {
 	fmt.Print(htmlFooter)
 }
 
-type Entry struct {
+type E struct {
 	Title string
 	Syll  string
 	IPA   string
@@ -146,7 +146,7 @@ type Entry struct {
 }
 
 // To human readable line
-func (e *Entry) ToOneline() string {
+func (e *E) ToOneline() string {
 	var fields []string
 	fields = append(fields, "["+e.Title+"]")
 	if e.Syll != "" {
@@ -209,7 +209,7 @@ func renderText(entries []*RawEntry) {
 		hg := parseHG(pe.Title, pe.HG)
 		etym := parseEtym(pe.Title, pe.Etym)
 		//hgDump, err := yaml.Marshal(hg)
-		et := &Entry{
+		et := &E{
 			Title: pe.Title,
 			Syll:  hg.SYL_TXT,
 			IPA:   hg.PRX,
