@@ -65,8 +65,8 @@ func main() {
 
 	switch *flagMode {
 	case "html":
-		words := getWords(*flagWords, *flagWordsFile)
-		renderHTML(entries, words)
+		selectWords := getWords(*flagWords, *flagWordsFile)
+		renderHTML(entries, selectWords)
 	case "htmlsplit":
 		outDir := flag.Arg(1)
 		var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
@@ -93,7 +93,8 @@ func main() {
 			f.Write(ent.Body)
 		}
 	case "text":
-		renderText(entries)
+		selectWords := getWords(*flagWords, *flagWordsFile)
+		renderText(entries, selectWords)
 	default:
 		panic("Invalid mode")
 	}
@@ -125,9 +126,10 @@ func renderHTML(entries []*RawEntry, words []string) {
 	}
 	fmt.Print(GenHtmlHeader("NOAD HTML as one file"))
 	for _, ent := range entries {
-		if len(words) == 0 || mapWords[strings.ToLower(ent.Title)] {
-			fmt.Println(string(ent.Body))
+		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
+			continue
 		}
+		fmt.Println(string(ent.Body))
 	}
 
 	fmt.Print(htmlFooter)
@@ -166,8 +168,18 @@ func (e *E) ToOneline() string {
 	return strings.Join(fields, " ")
 }
 
-func renderText(entries []*RawEntry) {
+func renderText(entries []*RawEntry, words []string) {
+	var mapWords = make(map[string]bool, len(words))
+	for _, w := range words {
+		if len(w) > 0 {
+			mapWords[strings.ToLower(w)] = true
+		}
+	}
+
 	for _, ent := range entries {
+		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
+			continue
+		}
 		title := ent.Title
 		doc := etree.NewDocument()
 		err := doc.ReadFromBytes(ent.Body)
@@ -296,7 +308,20 @@ func parseEtym(title string, e *etree.Element) string {
 		return ""
 	}
 	assert(len(e.Child) == 2, "etym children should be 2")
-	return S(e.Child[1].(*etree.Element))
+
+	etym := e.Child[1].(*etree.Element)
+	var s string
+	for _, child := range etym.Child {
+		switch e := child.(type) {
+		case *etree.Element:
+			s += e.Text() + " "
+		case *etree.CharData:
+		default:
+			panic("unexpected type")
+		}
+	}
+
+	return s
 }
 
 func dumpTokens(tokens []etree.Token) string {
@@ -310,12 +335,12 @@ func dumpTokens(tokens []etree.Token) string {
 			//s = cls.Value
 			s = dumpElm(tk)
 		case *etree.CharData:
-			s = tk.Data
+			//s = "(" + tk.Data + ")"
 		default:
 			typ := fmt.Sprintf("<TOK:%T>", tok)
 			panic("Unexpected token type:" + typ)
 		}
-		ss = append(ss, s)
+		ss = append(ss, s+" ")
 	}
 	return fmt.Sprintf("[%d:%s]", len(tokens), strings.Join(ss, ","))
 }
@@ -328,7 +353,7 @@ func dumpElm(e *etree.Element) string {
 	for _, attr := range e.Attr {
 		attrs = append(attrs, attr.Key+"="+attr.Value)
 	}
-	return fmt.Sprintf("<%s %s>%s %s</%s>",
+	return fmt.Sprintf("<%s %s>%s %s</%s>\n",
 		e.Tag, strings.Join(attrs, " "),
 		e.Text(),
 		dumpTokens(e.Child),
@@ -342,7 +367,7 @@ func S(elm *etree.Element) string {
 	elms := elm.FindElements("./")
 	var s string
 	for _, e := range elms {
-		s += e.Text()
+		s += e.Text() + " "
 	}
 	return s
 }
