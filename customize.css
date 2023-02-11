@@ -7,3 +7,8 @@
 .t_respell {
     display: none;
 }
+
+.external-links {
+    margin-left: 3em;
+    text-align: right;
+}

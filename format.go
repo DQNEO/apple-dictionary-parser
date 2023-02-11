@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -66,7 +67,8 @@ func main() {
 	switch *flagMode {
 	case "html":
 		selectWords := getWords(*flagWords, *flagWordsFile)
-		renderHTML(entries, selectWords)
+		oFile := os.Stdout
+		renderSingleHTML(oFile, entries, selectWords)
 	case "htmlsplit":
 		outDir := flag.Arg(1)
 		var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
@@ -118,7 +120,9 @@ func getWords(csv string, file string) []string {
 	return nil
 }
 
-func renderHTML(entries []*RawEntry, words []string) {
+const closingTag = "</d:entry>"
+
+func renderSingleHTML(w io.Writer, entries []*RawEntry, words []string) {
 	var mapWords = make(map[string]bool, len(words))
 	for _, w := range words {
 		if len(w) > 0 {
@@ -126,15 +130,17 @@ func renderHTML(entries []*RawEntry, words []string) {
 		}
 	}
 	htmlTitle := "NOAD HTML as a single  file"
-	fmt.Print(GenHtmlHeader(htmlTitle, true))
+	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true))
 	for _, ent := range entries {
 		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
 			continue
 		}
-		fmt.Println(string(ent.Body))
+		bodyWithoutClosingTag := ent.Body[:len(ent.Body)-len(closingTag)] // trim "</d:entry>"
+		w.Write(bodyWithoutClosingTag)                                    //
+		fmt.Fprintf(w, "<p class='external-links'>[ <a href='https://www.etymonline.com/word/%s' target='_blank'>etym</a> | <a href='https://www.google.com/search?tbm=isch&q=%s' target='_blank'>image</a> ]</p>\n", ent.Title, ent.Title)
+		fmt.Fprintln(w, closingTag)
 	}
-
-	fmt.Print(htmlFooter)
+	fmt.Fprintln(w, htmlFooter)
 }
 
 type E struct {
