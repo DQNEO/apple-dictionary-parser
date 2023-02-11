@@ -22,7 +22,7 @@ out/noad.dump: extract
 out/noad.sample1.html: out/noad.dump out/DefaultStyle.css out/customize.css format
 	./format --mode=html --words=happiness,joy,felicity,pleasure $<   > $@
 
-out/noad.sample2.html: out/noad.dump out/DefaultStyle.css out/customize.css format
+out/noad.sample2.html: out/noad.dump words-sample.txt out/DefaultStyle.css out/customize.css format
 	./format --mode=html --words-file=words-sample.txt  $<   > $@
 
 out/noad.txt: out/noad.dump format
