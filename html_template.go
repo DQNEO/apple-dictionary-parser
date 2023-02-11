@@ -10,14 +10,23 @@ const htmlHeader = `<!doctype html>
 
     <title>%s</title>
 
-    <link rel="stylesheet" href="DefaultStyle.css">
-    <link rel="stylesheet" href="customize.css">
+    %s
+
 </head>
 <body>
 `
 
-func GenHtmlHeader(title string) string {
-	return fmt.Sprintf(htmlHeader, title)
+func GetInternalCssBlock() string {
+	return ""
+}
+
+func GetExternalCssBlock() string {
+	return `<link rel="stylesheet" href="DefaultStyle.css">
+    <link rel="stylesheet" href="customize.css">`
+}
+
+func GenHtmlHeader(title string, cssBlock string) string {
+	return fmt.Sprintf(htmlHeader, title, cssBlock)
 }
 
 const htmlFooter = `</body>

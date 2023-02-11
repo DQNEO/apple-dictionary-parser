@@ -82,7 +82,9 @@ func main() {
 				f.Close()
 			}(f)
 			files[letter] = f
-			f.Write([]byte(GenHtmlHeader("NOAD - " + strings.ToUpper(string(letter)))))
+			cssBlock := GetExternalCssBlock()
+			htmlTitle := "NOAD - " + strings.ToUpper(string(letter))
+			f.Write([]byte(GenHtmlHeader(htmlTitle, cssBlock)))
 		}
 		for _, ent := range entries {
 			t := ent.Title[0]
@@ -124,7 +126,9 @@ func renderHTML(entries []*RawEntry, words []string) {
 			mapWords[strings.ToLower(w)] = true
 		}
 	}
-	fmt.Print(GenHtmlHeader("NOAD HTML as one file"))
+	htmlTitle := "NOAD HTML as a single  file"
+	cssBlock := GetExternalCssBlock()
+	fmt.Print(GenHtmlHeader(htmlTitle, cssBlock))
 	for _, ent := range entries {
 		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
 			continue
