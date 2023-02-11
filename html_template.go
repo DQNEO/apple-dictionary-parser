@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 const htmlHeader = `<!doctype html>
 <html lang="en">
@@ -16,8 +19,20 @@ const htmlHeader = `<!doctype html>
 <body>
 `
 
+const defaultCssFile = "out/DefaultStyle.css"
+const cstmCssFile = "out/customize.css"
+
 func GetInternalCssBlock() string {
-	return ""
+	defaultCss, err := os.ReadFile(defaultCssFile)
+	if err != nil {
+		panic(err)
+	}
+	cstmCss, err := os.ReadFile(cstmCssFile)
+	if err != nil {
+		panic(err)
+	}
+
+	return "<style>" + string(defaultCss) + "\n" + string(cstmCss) + "</style>"
 }
 
 func GetExternalCssBlock() string {
@@ -25,7 +40,13 @@ func GetExternalCssBlock() string {
     <link rel="stylesheet" href="customize.css">`
 }
 
-func GenHtmlHeader(title string, cssBlock string) string {
+func GenHtmlHeader(title string, inlineCss bool) string {
+	var cssBlock string
+	if inlineCss {
+		cssBlock = GetInternalCssBlock()
+	} else {
+		cssBlock = GetExternalCssBlock()
+	}
 	return fmt.Sprintf(htmlHeader, title, cssBlock)
 }
 
