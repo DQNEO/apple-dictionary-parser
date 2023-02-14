@@ -33,3 +33,7 @@ out/a.html: out/noad.dump format
 
 clean:
 	rm -f out/*.html out/*.txt out/*.css out/*.dump extract format
+
+.PHONY: tmp
+tmp: out/noad.dump format
+	./format --mode=text --words=contend $<
