@@ -71,30 +71,7 @@ func main() {
 		renderSingleHTML(oFile, entries, selectWords)
 	case "htmlsplit":
 		outDir := flag.Arg(1)
-		var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
-		var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
-		for _, letter := range letters {
-			fname := fmt.Sprintf("%s/%s.html", outDir, string(letter))
-			f, err := os.Create(fname)
-			if err != nil {
-				panic(err)
-			}
-			defer func(f *os.File) {
-				f.Write([]byte(htmlFooter))
-				f.Close()
-			}(f)
-			files[letter] = f
-			htmlTitle := "NOAD - " + strings.ToUpper(string(letter))
-			f.Write([]byte(GenHtmlHeader(htmlTitle, true)))
-		}
-		for _, ent := range entries {
-			t := ent.Title[0]
-			f, found := files[t]
-			if !found {
-				f = files[0]
-			}
-			renderEntry(f, ent.Title, ent.Body)
-		}
+		renderSplitHTML(outDir, entries)
 	case "text":
 		selectWords := getWords(*flagWords, *flagWordsFile)
 		renderText(entries, selectWords)
@@ -128,6 +105,33 @@ func renderEntry(w io.Writer, title string, body []byte) {
 	w.Write(bodyWithoutClosingTag)
 	fmt.Fprintf(w, "<p class='external-links'>[ <a href='https://www.etymonline.com/word/%s' target='_blank'>etym</a> | <a href='https://www.google.com/search?tbm=isch&q=%s' target='_blank'>image</a> ]</p>\n", title, title)
 	fmt.Fprintln(w, closingTag)
+}
+
+func renderSplitHTML(outDir string, entries []*RawEntry) {
+	var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
+	var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
+	for _, letter := range letters {
+		fname := fmt.Sprintf("%s/%s.html", outDir, string(letter))
+		f, err := os.Create(fname)
+		if err != nil {
+			panic(err)
+		}
+		defer func(f *os.File) {
+			f.Write([]byte(htmlFooter))
+			f.Close()
+		}(f)
+		files[letter] = f
+		htmlTitle := "NOAD - " + strings.ToUpper(string(letter))
+		f.Write([]byte(GenHtmlHeader(htmlTitle, true)))
+	}
+	for _, ent := range entries {
+		t := ent.Title[0]
+		f, found := files[t]
+		if !found {
+			f = files[0]
+		}
+		renderEntry(f, ent.Title, ent.Body)
+	}
 }
 
 func renderSingleHTML(w io.Writer, entries []*RawEntry, words []string) {
