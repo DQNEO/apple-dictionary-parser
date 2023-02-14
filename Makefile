@@ -13,7 +13,7 @@ out/customize.css: customize.css
 extract: extract.go
 	go build -o $@ $<
 
-format: format.go html_template.go
+format: format.go html_template.go parser/*
 	go build -o $@ format.go html_template.go
 
 out/noad.dump: extract
