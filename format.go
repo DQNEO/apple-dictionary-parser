@@ -178,8 +178,9 @@ func convEntryToText(ent *RawEntry) string {
 	title := ent.Title
 	body := ent.Body
 	et := parser.ParseEntry(title, body)
+	return et.Etym
 	//return fmt.Sprintf("%#v", et)
-	return ToOneline(et)
+	//return ToOneline(et)
 }
 
 func renderText(entries []*RawEntry, words []string) {

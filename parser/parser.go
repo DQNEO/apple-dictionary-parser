@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/beevik/etree"
+	"os"
 	"strings"
 )
 
@@ -144,14 +145,30 @@ func parseEtym(title string, e *etree.Element) string {
 		return ""
 	}
 	assert(len(e.Child) == 2, "etym children should be 2")
-
 	etym := e.Child[1].(*etree.Element)
 	var s string
-	for _, child := range etym.Child {
+	fmt.Fprintf(os.Stderr, "num child=%d\n", len(etym.Child))
+	for i, child := range etym.Child {
+		//fmt.Fprintf(os.Stderr, "child[%d] typ=%T, Index=%d\n", i, child, child.Index())
 		switch e := child.(type) {
 		case *etree.Element:
-			s += e.Text() + " "
+			fmt.Fprintf(os.Stderr, "child[%d] typ=%T, Class=%s, Text()=\"%s\"\n", i, child, e.SelectAttr("class").Value, e.Text())
+			if len(e.Child) == 0 {
+				s += e.Text() + " "
+			} else {
+
+				for _, c := range e.Child {
+					switch e := c.(type) {
+					case *etree.Element:
+						s += e.Text()
+					case *etree.CharData:
+						s += e.Data
+					}
+				}
+			}
 		case *etree.CharData:
+			fmt.Fprintf(os.Stderr, "child[%d] typ=%T, Data=%s\n", i, child, e.Data)
+			s += e.Data + " "
 		default:
 			panic("unexpected type")
 		}
