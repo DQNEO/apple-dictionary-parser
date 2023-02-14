@@ -34,6 +34,6 @@ out/a.html: out/noad.dump format
 clean:
 	rm -f out/*.html out/*.txt out/*.css out/*.dump extract format
 
-.PHONY: tmp
-tmp: out/noad.dump format
-	./format --mode=text --words=contend $<
+.PHONY: debug
+debug: out/noad.dump format
+	./format --mode=debug --words-file=../lexicon/passtan1/data/2100plus.txt $<

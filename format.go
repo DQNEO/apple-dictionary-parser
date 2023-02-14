@@ -53,7 +53,12 @@ func main() {
 	rawDumpFile := flag.Arg(0)
 	entries := parseDumpFile(rawDumpFile)
 
+	parser.DebugWriter = io.Discard
 	switch *flagMode {
+	case "debug":
+		parser.DebugWriter = os.Stderr
+		selectWords := getWords(*flagWords, *flagWordsFile)
+		renderForDebug(entries, selectWords)
 	case "html":
 		selectWords := getWords(*flagWords, *flagWordsFile)
 		oFile := os.Stdout
@@ -155,8 +160,9 @@ func ToOneline(e *parser.Entry) string {
 	fields = append(fields, e.Phr)
 	fields = append(fields, e.Phv)
 	fields = append(fields, e.Drv)
-	if e.Etym != "" {
-		fields = append(fields, "<"+e.Etym+">")
+	for _, ee := range e.Etym {
+		s := strings.TrimSpace(string(ee))
+		fields = append(fields, " "+s+" ")
 	}
 	fields = append(fields, e.Note)
 	return strings.Join(fields, " ")
@@ -166,9 +172,30 @@ func convEntryToText(ent *RawEntry) string {
 	title := ent.Title
 	body := ent.Body
 	et := parser.ParseEntry(title, body)
-	return et.Etym
 	//return fmt.Sprintf("%#v", et)
-	//return ToOneline(et)
+	return ToOneline(et)
+}
+
+func renderForDebug(entries []*RawEntry, words []string) {
+	var mapWords = make(map[string]bool, len(words))
+	for _, w := range words {
+		if len(w) > 0 {
+			mapWords[strings.ToLower(w)] = true
+		}
+	}
+
+	for _, ent := range entries {
+		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
+			continue
+		}
+		title := ent.Title
+		body := ent.Body
+		e := parser.ParseEntry(title, body)
+		//dump.P(e.Etym)
+		for _, etym := range e.Etym {
+			fmt.Printf("%#v\n", etym)
+		}
+	}
 }
 
 func renderText(entries []*RawEntry, words []string) {
@@ -183,7 +210,9 @@ func renderText(entries []*RawEntry, words []string) {
 		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
 			continue
 		}
-		s := convEntryToText(ent)
+		et := parser.ParseEntry(ent.Title, ent.Body)
+		//return fmt.Sprintf("%#v", et)
+		s := ToOneline(et)
 		fmt.Println(s)
 	}
 }

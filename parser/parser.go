@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 	"github.com/beevik/etree"
-	"os"
+	"io"
 	"strings"
 )
 
@@ -15,9 +15,13 @@ type Entry struct {
 	Phr   string
 	Phv   string
 	Drv   string
-	Etym  string
+	Etym  Etymology
 	Note  string
 }
+
+type EtymElement string
+
+type Etymology []EtymElement
 
 func parseTopLevelElements(title string, body []byte) (*etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element) {
 	doc := etree.NewDocument()
@@ -59,6 +63,8 @@ func parseTopLevelElements(title string, body []byte) (*etree.Element, *etree.El
 	}
 	return eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote
 }
+
+var DebugWriter io.Writer
 
 func ParseEntry(title string, body []byte) *Entry {
 	eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote := parseTopLevelElements(title, body)
@@ -119,7 +125,7 @@ func parseHG(title string, eHG *etree.Element) *HG {
 						pronunciation = append(pronunciation, elm.Text())
 					}
 				} // else , no IPA
-				//fmt.Fprintf(os.Stderr, "prx children=%02d, title=%s%c", len(elm.Child), title, 10)
+				//fmt.Fprintf(DebugWriter, "prx children=%02d, title=%s%c", len(elm.Child), title, 10)
 				hg.PRX = strings.Join(pronunciation, ",")
 			case "pr":
 				hg.PR = dumpElm(elm)
@@ -140,41 +146,61 @@ func parseHG(title string, eHG *etree.Element) *HG {
 	return hg
 }
 
-func parseEtym(title string, e *etree.Element) string {
+func collectText(elm *etree.Element) string {
+	var r string
+	for _, c := range elm.Child {
+		switch e := c.(type) {
+		case *etree.Element:
+			//			assert(len(e.Child) > 0, "children should not be empty")
+			s := collectText(e)
+			r += s
+		case *etree.CharData:
+			if e.IsWhitespace() {
+				continue
+			}
+			r += e.Data
+		}
+	}
+	return r
+}
+
+func parseEtym(title string, e *etree.Element) Etymology {
+	var ees []EtymElement
 	if e == nil {
-		return ""
+		return nil
 	}
 	assert(len(e.Child) == 2, "etym children should be 2")
 	etym := e.Child[1].(*etree.Element)
-	var s string
-	fmt.Fprintf(os.Stderr, "num child=%d\n", len(etym.Child))
-	for i, child := range etym.Child {
-		//fmt.Fprintf(os.Stderr, "child[%d] typ=%T, Index=%d\n", i, child, child.Index())
-		switch e := child.(type) {
+	fmt.Fprintf(DebugWriter, "[%s] ---- childlen=%d\n", title, len(etym.Child))
+	for i, elem := range etym.Child {
+		//fmt.Fprintf(DebugWriter, "elem[%d] typ=%T, Index=%d\n", i, elem, elem.Index())
+		fmt.Fprintf(DebugWriter, "  - [%02d] ", i)
+		switch e := elem.(type) {
 		case *etree.Element:
-			fmt.Fprintf(os.Stderr, "child[%d] typ=%T, Class=%s, Text()=\"%s\"\n", i, child, e.SelectAttr("class").Value, e.Text())
-			if len(e.Child) == 0 {
-				s += e.Text() + " "
-			} else {
-
-				for _, c := range e.Child {
-					switch e := c.(type) {
-					case *etree.Element:
-						s += e.Text()
-					case *etree.CharData:
-						s += e.Data
-					}
-				}
+			class := e.SelectAttr("class").Value
+			if class == "gp tg_etym" && e.Text() == "." {
+				fmt.Fprintf(DebugWriter, ".\n")
+				continue
 			}
+			fmt.Fprintf(DebugWriter, "<%s> Class=\"%s\", ChildLen=%d, Text()=\"%s\"\n", e.Tag, class, len(e.Child), e.Text())
+			if len(e.Child) == 0 {
+				panic("Unexpected structure")
+			}
+			s := collectText(e)
+			ees = append(ees, EtymElement(s))
 		case *etree.CharData:
-			fmt.Fprintf(os.Stderr, "child[%d] typ=%T, Data=%s\n", i, child, e.Data)
-			s += e.Data + " "
+			if e.IsWhitespace() {
+				continue
+			}
+			fmt.Fprintf(DebugWriter, "\"%s\"\n", e.Data)
+			ee := EtymElement(e.Data)
+			ees = append(ees, ee)
 		default:
 			panic("unexpected type")
 		}
 	}
 
-	return s
+	return ees
 }
 
 func S(elm *etree.Element) string {
