@@ -93,7 +93,7 @@ func main() {
 			if !found {
 				f = files[0]
 			}
-			f.Write(ent.Body)
+			renderEntry(f, ent.Title, ent.Body)
 		}
 	case "text":
 		selectWords := getWords(*flagWords, *flagWordsFile)
@@ -122,6 +122,14 @@ func getWords(csv string, file string) []string {
 
 const closingTag = "</d:entry>"
 
+func renderEntry(w io.Writer, title string, body []byte) {
+	// trim "</d:entry>"
+	bodyWithoutClosingTag := body[:len(body)-len(closingTag)]
+	w.Write(bodyWithoutClosingTag)
+	fmt.Fprintf(w, "<p class='external-links'>[ <a href='https://www.etymonline.com/word/%s' target='_blank'>etym</a> | <a href='https://www.google.com/search?tbm=isch&q=%s' target='_blank'>image</a> ]</p>\n", title, title)
+	fmt.Fprintln(w, closingTag)
+}
+
 func renderSingleHTML(w io.Writer, entries []*RawEntry, words []string) {
 	var mapWords = make(map[string]bool, len(words))
 	for _, w := range words {
@@ -129,16 +137,13 @@ func renderSingleHTML(w io.Writer, entries []*RawEntry, words []string) {
 			mapWords[strings.ToLower(w)] = true
 		}
 	}
-	htmlTitle := "NOAD HTML as a single  file"
+	htmlTitle := "NOAD HTML as a single file"
 	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true))
 	for _, ent := range entries {
 		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
 			continue
 		}
-		bodyWithoutClosingTag := ent.Body[:len(ent.Body)-len(closingTag)] // trim "</d:entry>"
-		w.Write(bodyWithoutClosingTag)                                    //
-		fmt.Fprintf(w, "<p class='external-links'>[ <a href='https://www.etymonline.com/word/%s' target='_blank'>etym</a> | <a href='https://www.google.com/search?tbm=isch&q=%s' target='_blank'>image</a> ]</p>\n", ent.Title, ent.Title)
-		fmt.Fprintln(w, closingTag)
+		renderEntry(w, ent.Title, ent.Body)
 	}
 	fmt.Fprintln(w, htmlFooter)
 }
