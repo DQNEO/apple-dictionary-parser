@@ -18,16 +18,16 @@ type RawEntry struct {
 	Body  []byte
 }
 
-type ParsedEntry struct {
-	Title       string
-	HG          *etree.Element
-	SG          *etree.Element
-	Phrases     *etree.Element
-	PhVerbs     *etree.Element
-	Derivatives *etree.Element
-	Etym        *etree.Element
-	Note        *etree.Element
-}
+//type ParsedEntry struct {
+//	Title       string
+//	HG          *etree.Element
+//	SG          *etree.Element
+//	Phrases     *etree.Element
+//	PhVerbs     *etree.Element
+//	Derivatives *etree.Element
+//	Etym        *etree.Element
+//	Note        *etree.Element
+//}
 
 func parseDumpFile(path string) []*RawEntry {
 	var r []*RawEntry
@@ -185,6 +185,69 @@ func (e *E) ToOneline() string {
 	return strings.Join(fields, " ")
 }
 
+func parseTopLevelElements(title string, body []byte) (*etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element) {
+	doc := etree.NewDocument()
+	err := doc.ReadFromBytes(body)
+	if err != nil {
+		panic(err)
+	}
+
+	child := doc.Child[0].(*etree.Element)
+	numChildren := len(child.Child)
+	if numChildren < 2 || 7 < numChildren {
+		panic("Unexpected number of children")
+	}
+	var eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote *etree.Element
+	for _, ch := range child.Child {
+		elm := ch.(*etree.Element)
+		if elm.Tag != "span" {
+			panic("unexpected tag:" + elm.Tag + " --- " + title)
+		}
+		class := elm.SelectAttr("class").Value
+		switch class {
+		case "hg x_xh0": // head group
+			eHG = elm
+		case "sg": // meaning
+			eSG = elm
+		case "subEntryBlock x_xo0 t_phrases":
+			ePhrases = elm
+		case "subEntryBlock x_xo0 t_phrasalVerbs":
+			ePhVerbs = elm
+		case "subEntryBlock x_xo0 t_derivatives":
+			eDerivatives = elm
+		case "etym x_xo0":
+			eEtym = elm
+		case "note x_xo0":
+			eNote = elm
+		default:
+			panic(fmt.Sprintf(`unexpected class: "%s" in entry "%s"`, class, title))
+		}
+	}
+	return eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote
+}
+
+func convEntryToText(ent *RawEntry) string {
+	title := ent.Title
+	body := ent.Body
+	eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote := parseTopLevelElements(title, body)
+	hg := parseHG(title, eHG)
+	etym := parseEtym(title, eEtym)
+	//hgDump, err := yaml.Marshal(hg)
+	et := &E{
+		Title: title,
+		Syll:  hg.SYL_TXT,
+		IPA:   hg.PRX,
+		SG:    S(eSG),
+		Phr:   S(ePhrases),
+		Phv:   S(ePhVerbs),
+		Drv:   S(eDerivatives),
+		Etym:  etym,
+		Note:  S(eNote),
+	}
+	//return fmt.Sprintf("%#v", et)
+	return et.ToOneline()
+}
+
 func renderText(entries []*RawEntry, words []string) {
 	var mapWords = make(map[string]bool, len(words))
 	for _, w := range words {
@@ -197,60 +260,8 @@ func renderText(entries []*RawEntry, words []string) {
 		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
 			continue
 		}
-		title := ent.Title
-		doc := etree.NewDocument()
-		err := doc.ReadFromBytes(ent.Body)
-		if err != nil {
-			panic(err)
-		}
-
-		child := doc.Child[0].(*etree.Element)
-		numChildren := len(child.Child)
-		if numChildren < 2 || 7 < numChildren {
-			panic("Unexpected number of children")
-		}
-		pe := &ParsedEntry{Title: title}
-		for _, ch := range child.Child {
-			elm := ch.(*etree.Element)
-			if elm.Tag != "span" {
-				panic("unexpected tag:" + elm.Tag + " --- " + title)
-			}
-			class := elm.SelectAttr("class").Value
-			switch class {
-			case "hg x_xh0": // head group
-				pe.HG = elm
-			case "sg": // meaning
-				pe.SG = elm
-			case "subEntryBlock x_xo0 t_phrases":
-				pe.Phrases = elm
-			case "subEntryBlock x_xo0 t_phrasalVerbs":
-				pe.PhVerbs = elm
-			case "subEntryBlock x_xo0 t_derivatives":
-				pe.Derivatives = elm
-			case "etym x_xo0":
-				pe.Etym = elm
-			case "note x_xo0":
-				pe.Note = elm
-			default:
-				panic(fmt.Sprintf(`unexpected class: "%s" in entry "%s"`, class, title))
-			}
-		}
-		hg := parseHG(pe.Title, pe.HG)
-		etym := parseEtym(pe.Title, pe.Etym)
-		//hgDump, err := yaml.Marshal(hg)
-		et := &E{
-			Title: pe.Title,
-			Syll:  hg.SYL_TXT,
-			IPA:   hg.PRX,
-			SG:    S(pe.SG),
-			Phr:   S(pe.Phrases),
-			Phv:   S(pe.PhVerbs),
-			Drv:   S(pe.Derivatives),
-			Etym:  etym,
-			Note:  S(pe.Note),
-		}
-
-		fmt.Println(et.ToOneline())
+		s := convEntryToText(ent)
+		fmt.Println(s)
 	}
 }
 
