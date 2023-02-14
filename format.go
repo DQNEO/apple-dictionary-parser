@@ -141,18 +141,6 @@ func renderSingleHTML(w io.Writer, entries []*RawEntry, words []string) {
 	fmt.Fprintln(w, htmlFooter)
 }
 
-type E struct {
-	Title string
-	Syll  string
-	IPA   string
-	SG    string
-	Phr   string
-	Phv   string
-	Drv   string
-	Etym  string
-	Note  string
-}
-
 // To human readable line
 func ToOneline(e *parser.Entry) string {
 	var fields []string
