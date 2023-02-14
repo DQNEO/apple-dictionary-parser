@@ -19,9 +19,9 @@ type Entry struct {
 	Note  string
 }
 
-type EtymElement string
+type EtymChunk string
 
-type Etymology []EtymElement
+type Etymology []EtymChunk
 
 func parseTopLevelElements(title string, body []byte) (*etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element, *etree.Element) {
 	doc := etree.NewDocument()
@@ -146,26 +146,43 @@ func parseHG(title string, eHG *etree.Element) *HG {
 	return hg
 }
 
-func collectText(elm *etree.Element) string {
+func parseFF(elm *etree.Element) string {
+	assert(len(elm.Child) == 1, "ff should have 1 child")
+	char := elm.Child[0].(*etree.CharData)
+	return char.Data
+}
+
+func collectText(indentLevel int, debugWriter io.Writer, elm *etree.Element) string {
 	var r string
 	for _, c := range elm.Child {
+		var indent []byte
+		for i := 0; i < indentLevel; i++ {
+			indent = append(indent, ' ')
+		}
+		fmt.Fprint(debugWriter, string(indent))
 		switch e := c.(type) {
 		case *etree.Element:
-			//			assert(len(e.Child) > 0, "children should not be empty")
-			s := collectText(e)
+			class := e.SelectAttrValue("class", "")
+			fmt.Fprintf(DebugWriter, `- <%s> Class="%s", ChildLen=%d, Text()="%s"`+"\n", e.Tag, class, len(e.Child), e.Text())
+			var s string
+			s = collectText(indentLevel+4, debugWriter, e)
 			r += s
 		case *etree.CharData:
 			if e.IsWhitespace() {
 				continue
 			}
-			r += e.Data
+			s := e.Data
+			fmt.Fprintf(debugWriter, "- C\"%s\"\n", s)
+			r += s
 		}
 	}
 	return r
 }
 
+var FFWords []string
+
 func parseEtym(title string, e *etree.Element) Etymology {
-	var ees []EtymElement
+	var ees []EtymChunk
 	if e == nil {
 		return nil
 	}
@@ -179,21 +196,31 @@ func parseEtym(title string, e *etree.Element) Etymology {
 		case *etree.Element:
 			class := e.SelectAttr("class").Value
 			if class == "gp tg_etym" && e.Text() == "." {
+				// End of Etymology block ?
 				fmt.Fprintf(DebugWriter, ".\n")
 				continue
 			}
-			fmt.Fprintf(DebugWriter, "<%s> Class=\"%s\", ChildLen=%d, Text()=\"%s\"\n", e.Tag, class, len(e.Child), e.Text())
+			fmt.Fprintf(DebugWriter, `<%s> Class="%s", ChildLen=%d, Text()="%s"`+"\n", e.Tag, class, len(e.Child), e.Text())
 			if len(e.Child) == 0 {
 				panic("Unexpected structure")
 			}
-			s := collectText(e)
-			ees = append(ees, EtymElement(s))
+			var s string
+			switch class {
+			case "ff":
+				s = parseFF(e)
+				FFWords = append(FFWords, s)
+				fmt.Fprintf(DebugWriter, "    <ff>%s</ff>\n", s)
+			default:
+				s = collectText(4, DebugWriter, e)
+			}
+
+			ees = append(ees, EtymChunk(s))
 		case *etree.CharData:
 			if e.IsWhitespace() {
 				continue
 			}
-			fmt.Fprintf(DebugWriter, "\"%s\"\n", e.Data)
-			ee := EtymElement(e.Data)
+			fmt.Fprintf(DebugWriter, "C\"%s\"\n", e.Data)
+			ee := EtymChunk(e.Data)
 			ees = append(ees, ee)
 		default:
 			panic("unexpected type")

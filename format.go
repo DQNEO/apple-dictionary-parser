@@ -69,6 +69,10 @@ func main() {
 	case "text":
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderText(entries, selectWords)
+		fmt.Println("<FFCollection>")
+		for i, ff := range parser.FFWords {
+			fmt.Printf("[%d] %s\n", i, ff)
+		}
 	default:
 		panic("Invalid mode")
 	}
