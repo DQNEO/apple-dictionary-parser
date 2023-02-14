@@ -57,24 +57,41 @@ func main() {
 	switch *flagMode {
 	case "debug":
 		parser.DebugWriter = os.Stderr
-		selectWords := getWords(*flagWords, *flagWordsFile)
+		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderForDebug(entries, selectWords)
 	case "html":
-		selectWords := getWords(*flagWords, *flagWordsFile)
+		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		oFile := os.Stdout
 		renderSingleHTML(oFile, entries, selectWords)
 	case "htmlsplit":
 		outDir := flag.Arg(1)
 		renderSplitHTML(outDir, entries)
 	case "text":
-		selectWords := getWords(*flagWords, *flagWordsFile)
+		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderText(entries, selectWords)
 	default:
 		panic("Invalid mode")
 	}
 }
 
-func getWords(csv string, file string) []string {
+type SelectWords map[string]bool
+
+func (mp SelectWords) HasKey(w string) bool {
+	return mp[strings.ToLower(w)]
+}
+
+func getSelectWordsMap(csv string, file string) SelectWords {
+	words := getSelectWords(csv, file)
+	var mapWords = make(SelectWords, len(words))
+	for _, w := range words {
+		if len(w) > 0 {
+			mapWords[strings.ToLower(w)] = true
+		}
+	}
+	return mapWords
+}
+
+func getSelectWords(csv string, file string) []string {
 	if csv != "" && file != "" {
 		panic("Please do not specify both words and words-file at the same time")
 	}
@@ -128,17 +145,11 @@ func renderSplitHTML(outDir string, entries []*RawEntry) {
 	}
 }
 
-func renderSingleHTML(w io.Writer, entries []*RawEntry, words []string) {
-	var mapWords = make(map[string]bool, len(words))
-	for _, w := range words {
-		if len(w) > 0 {
-			mapWords[strings.ToLower(w)] = true
-		}
-	}
+func renderSingleHTML(w io.Writer, entries []*RawEntry, selectWords SelectWords) {
 	htmlTitle := "NOAD HTML as a single file"
 	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true))
 	for _, ent := range entries {
-		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
+		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
 		}
 		renderEntry(w, ent.Title, ent.Body)
@@ -176,42 +187,24 @@ func convEntryToText(ent *RawEntry) string {
 	return ToOneline(et)
 }
 
-func renderForDebug(entries []*RawEntry, words []string) {
-	var mapWords = make(map[string]bool, len(words))
-	for _, w := range words {
-		if len(w) > 0 {
-			mapWords[strings.ToLower(w)] = true
-		}
-	}
-
+func renderForDebug(entries []*RawEntry, selectWords SelectWords) {
 	for _, ent := range entries {
-		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
+		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
 		}
-		title := ent.Title
-		body := ent.Body
-		e := parser.ParseEntry(title, body)
-		//dump.P(e.Etym)
+		e := parser.ParseEntry(ent.Title, ent.Body)
 		for _, etym := range e.Etym {
 			fmt.Printf("%#v\n", etym)
 		}
 	}
 }
 
-func renderText(entries []*RawEntry, words []string) {
-	var mapWords = make(map[string]bool, len(words))
-	for _, w := range words {
-		if len(w) > 0 {
-			mapWords[strings.ToLower(w)] = true
-		}
-	}
-
+func renderText(entries []*RawEntry, selectWords SelectWords) {
 	for _, ent := range entries {
-		if len(words) > 0 && !mapWords[strings.ToLower(ent.Title)] {
+		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
 		}
 		et := parser.ParseEntry(ent.Title, ent.Body)
-		//return fmt.Sprintf("%#v", et)
 		s := ToOneline(et)
 		fmt.Println(s)
 	}
