@@ -17,6 +17,8 @@ type Entry struct {
 	Drv   string
 	Etym  Etymology
 	Note  string
+
+	FFWords []string
 }
 
 type EtymChunk string
@@ -64,23 +66,24 @@ func parseTopLevelElements(title string, body []byte) (*etree.Element, *etree.El
 	return eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote
 }
 
-var DebugWriter io.Writer
+var DebugWriter io.Writer = io.Discard
 
 func ParseEntry(title string, body []byte) *Entry {
 	eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote := parseTopLevelElements(title, body)
 	hg := parseHG(title, eHG)
-	etym := parseEtym(title, eEtym)
+	etym, ffwords := parseEtym(title, eEtym)
 	//hgDump, err := yaml.Marshal(hg)
 	et := &Entry{
-		Title: title,
-		Syll:  hg.SYL_TXT,
-		IPA:   hg.PRX,
-		SG:    S(eSG),
-		Phr:   S(ePhrases),
-		Phv:   S(ePhVerbs),
-		Drv:   S(eDerivatives),
-		Etym:  etym,
-		Note:  S(eNote),
+		Title:   title,
+		Syll:    hg.SYL_TXT,
+		IPA:     hg.PRX,
+		SG:      S(eSG),
+		Phr:     S(ePhrases),
+		Phv:     S(ePhVerbs),
+		Drv:     S(eDerivatives),
+		Etym:    etym,
+		Note:    S(eNote),
+		FFWords: ffwords,
 	}
 	return et
 }
@@ -149,7 +152,7 @@ func parseHG(title string, eHG *etree.Element) *HG {
 func parseFF(elm *etree.Element) string {
 	assert(len(elm.Child) == 1, "ff should have 1 child")
 	char := elm.Child[0].(*etree.CharData)
-	return char.Data
+	return strings.TrimSpace(char.Data)
 }
 
 func collectText(indentLevel int, debugWriter io.Writer, elm *etree.Element) string {
@@ -179,12 +182,11 @@ func collectText(indentLevel int, debugWriter io.Writer, elm *etree.Element) str
 	return r
 }
 
-var FFWords []string
-
-func parseEtym(title string, e *etree.Element) Etymology {
+func parseEtym(title string, e *etree.Element) (Etymology, []string) {
 	var ees []EtymChunk
+	var ffwords []string
 	if e == nil {
-		return nil
+		return nil, nil
 	}
 	assert(len(e.Child) == 2, "etym children should be 2")
 	etym := e.Child[1].(*etree.Element)
@@ -208,7 +210,7 @@ func parseEtym(title string, e *etree.Element) Etymology {
 			switch class {
 			case "ff":
 				s = parseFF(e)
-				FFWords = append(FFWords, s)
+				ffwords = append(ffwords, s)
 				fmt.Fprintf(DebugWriter, "    <ff>%s</ff>\n", s)
 			default:
 				s = collectText(4, DebugWriter, e)
@@ -227,7 +229,7 @@ func parseEtym(title string, e *etree.Element) Etymology {
 		}
 	}
 
-	return ees
+	return ees, ffwords
 }
 
 func S(elm *etree.Element) string {

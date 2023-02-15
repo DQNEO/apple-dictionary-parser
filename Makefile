@@ -40,4 +40,4 @@ clean:
 
 .PHONY: debug
 debug: $(CACHE) format
-	./format --mode=debug --words-file=../lexicon/passtan1/data/2100plus.txt $<
+	./format --mode=debug --words-file=../lexicon/passtan1/data/2100plus.txt $< >out/etym.txt

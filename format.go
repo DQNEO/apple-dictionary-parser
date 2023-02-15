@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/DQNEO/apple-dictionary/parser"
@@ -53,7 +54,6 @@ func main() {
 	rawDumpFile := flag.Arg(0)
 	entries := parseDumpFile(rawDumpFile)
 
-	parser.DebugWriter = io.Discard
 	switch *flagMode {
 	case "debug":
 		parser.DebugWriter = os.Stderr
@@ -69,10 +69,6 @@ func main() {
 	case "text":
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderText(entries, selectWords)
-		fmt.Println("<FFCollection>")
-		for i, ff := range parser.FFWords {
-			fmt.Printf("[%d] %s\n", i, ff)
-		}
 	default:
 		panic("Invalid mode")
 	}
@@ -179,6 +175,10 @@ func ToOneline(e *parser.Entry) string {
 		s := strings.TrimSpace(string(ee))
 		fields = append(fields, " "+s+" ")
 	}
+	if len(e.FFWords) > 0 {
+		ffnote := "<" + strings.Join(e.FFWords, ",") + ">"
+		fields = append(fields, ffnote)
+	}
 	fields = append(fields, e.Note)
 	return strings.Join(fields, " ")
 }
@@ -192,14 +192,41 @@ func convEntryToText(ent *RawEntry) string {
 }
 
 func renderForDebug(entries []*RawEntry, selectWords SelectWords) {
+	var ffMap = make(map[string][]string, len(entries))
+	var ffRevMap = make(map[string][]string, len(entries))
 	for _, ent := range entries {
 		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
 		}
 		e := parser.ParseEntry(ent.Title, ent.Body)
-		for _, etym := range e.Etym {
-			fmt.Printf("%#v\n", etym)
+		ffMap[ent.Title] = e.FFWords
+		for _, ff := range e.FFWords {
+			ffRevMap[ff] = append(ffRevMap[ff], ent.Title)
 		}
+	}
+	// Sort
+	var ffMapKeys []string
+	for k, _ := range ffMap {
+		ffMapKeys = append(ffMapKeys, k)
+	}
+	sort.Strings(ffMapKeys)
+
+	var ffRevMapKeys []string
+	for k, _ := range ffRevMap {
+		ffRevMapKeys = append(ffRevMapKeys, k)
+	}
+
+	sort.Strings(ffRevMapKeys)
+
+	fmt.Printf("--- FF Map----\n")
+	for _, k := range ffMapKeys {
+		v := ffMap[k]
+		fmt.Printf("[%s] %s\n", k, strings.Join(v, ","))
+	}
+	fmt.Printf("--- FF Rev Map----\n")
+	for _, k := range ffRevMapKeys {
+		v := ffRevMap[k]
+		fmt.Printf("[%s] %s\n", k, strings.Join(v, ","))
 	}
 }
 
