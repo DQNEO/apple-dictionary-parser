@@ -3,5 +3,7 @@
 /out/*.css
 /out/*.html
 
+/.noad.cache
+
 extract
 format
