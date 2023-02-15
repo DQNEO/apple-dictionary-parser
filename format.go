@@ -202,35 +202,42 @@ func convEntryToText(ent *RawEntry) string {
 }
 
 func analyzeEtymology(outDir string, entries []*RawEntry, selectWords SelectWords) {
-	fileE2O, err := os.Create(outDir + "/etym-e2o.txt")
+	fileE2O, err := os.Create(outDir + "/english2origin.txt")
 	if err != nil {
 		panic(err)
 	}
 	defer fileE2O.Close()
-	fileO2E, err := os.Create(outDir + "/etym-o2e.txt")
+	fileO2E, err := os.Create(outDir + "/origin2english.txt")
 	if err != nil {
 		panic(err)
 	}
 	defer fileO2E.Close()
 
-	var ffRevMap = make(map[string][]string, len(entries))
+	var o2eMap = make(map[string][]string, len(entries))
+	var allFF []string
+
 	for _, ent := range entries {
 		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
 		}
 		e := parser.ParseEntry(ent.Title, ent.Body)
-		fmt.Fprintf(fileO2E, "[%s] %s\n", ent.Title, strings.Join(e.FFWords, ","))
+		if len(e.Etym) == 0 {
+			continue
+		}
+		fmt.Fprintf(fileE2O, "[%s] %s\n", ent.Title, strings.Join(e.FFWords, ","))
+		for _, ff := range e.FFWords {
+			o2eMap[ff] = append(o2eMap[ff], ent.Title)
+			allFF = append(allFF, ff)
+		}
 	}
-
-	// Make inverted map
-	var ffRevMapKeys []string
-	for k, _ := range ffRevMap {
-		ffRevMapKeys = append(ffRevMapKeys, k)
+	var uniqFFs []string
+	for k, _ := range o2eMap {
+		uniqFFs = append(uniqFFs, k)
 	}
-	sort.Strings(ffRevMapKeys)
-	for _, k := range ffRevMapKeys {
-		v := ffRevMap[k]
-		fmt.Fprintf(fileO2E, "[%s] %s\n", k, strings.Join(v, ","))
+	sort.Strings(uniqFFs)
+	for _, ff := range uniqFFs {
+		v := o2eMap[ff]
+		fmt.Fprintf(fileO2E, "[%s] %s\n", ff, strings.Join(v, ","))
 	}
 }
 

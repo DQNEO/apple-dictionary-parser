@@ -39,7 +39,7 @@ out/groups/a.html: $(CACHE) format $(CSS_FILES) groups_index.html
 
 .PHONY: etym
 etym: $(CACHE) format
-	./format --mode=etym --words-file=../lexicon/passtan1/data/2100plus.txt $< out
+	./format --mode=etym $< out
 
 clean:
 	rm -f out/*.html out/*.txt out/*.css $(CACHE) extract format
