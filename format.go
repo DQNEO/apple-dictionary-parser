@@ -59,12 +59,22 @@ func main() {
 		parser.DebugWriter = os.Stderr
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderForDebug(entries, selectWords)
+	case "etym":
+		outDir := flag.Arg(1)
+		if outDir == "" {
+			panic("invalid argument")
+		}
+		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+		analyzeEtymology(outDir, entries, selectWords)
 	case "html":
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		oFile := os.Stdout
 		renderSingleHTML(oFile, entries, selectWords)
 	case "htmlsplit":
 		outDir := flag.Arg(1)
+		if outDir == "" {
+			panic("invalid argument")
+		}
 		renderSplitHTML(outDir, entries)
 	case "text":
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
@@ -189,6 +199,39 @@ func convEntryToText(ent *RawEntry) string {
 	et := parser.ParseEntry(title, body)
 	//return fmt.Sprintf("%#v", et)
 	return ToOneline(et)
+}
+
+func analyzeEtymology(outDir string, entries []*RawEntry, selectWords SelectWords) {
+	fileE2O, err := os.Create(outDir + "/etym-e2o.txt")
+	if err != nil {
+		panic(err)
+	}
+	defer fileE2O.Close()
+	fileO2E, err := os.Create(outDir + "/etym-o2e.txt")
+	if err != nil {
+		panic(err)
+	}
+	defer fileO2E.Close()
+
+	var ffRevMap = make(map[string][]string, len(entries))
+	for _, ent := range entries {
+		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
+			continue
+		}
+		e := parser.ParseEntry(ent.Title, ent.Body)
+		fmt.Fprintf(fileO2E, "[%s] %s\n", ent.Title, strings.Join(e.FFWords, ","))
+	}
+
+	// Make inverted map
+	var ffRevMapKeys []string
+	for k, _ := range ffRevMap {
+		ffRevMapKeys = append(ffRevMapKeys, k)
+	}
+	sort.Strings(ffRevMapKeys)
+	for _, k := range ffRevMapKeys {
+		v := ffRevMap[k]
+		fmt.Fprintf(fileO2E, "[%s] %s\n", k, strings.Join(v, ","))
+	}
 }
 
 func renderForDebug(entries []*RawEntry, selectWords SelectWords) {

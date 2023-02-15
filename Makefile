@@ -35,8 +35,15 @@ out/groups/a.html: $(CACHE) format $(CSS_FILES) groups_index.html
 	cp groups_index.html out/groups/index.html
 	./format --mode=htmlsplit $< out/groups
 
+
+
+.PHONY: etym
+etym: $(CACHE) format
+	./format --mode=etym --words-file=../lexicon/passtan1/data/2100plus.txt $< out
+
 clean:
 	rm -f out/*.html out/*.txt out/*.css $(CACHE) extract format
+
 
 .PHONY: debug
 debug: $(CACHE) format
