@@ -3,14 +3,13 @@
 CSS_FILES := out/DefaultStyle.css out/customize.css
 CACHE := .noad.cache
 
-all: out/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
+all: out/groups/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
 
 out/DefaultStyle.css:
-	DIR=`dirname "${DICT_FILE}"`; cp "$$DIR/DefaultStyle.css" out/
+	DIR=`dirname "${DICT_FILE}"`; cp "$$DIR/DefaultStyle.css" $@
 
 out/customize.css: customize.css
-	cp customize.css $@
-
+	cp $< $@
 
 extract: extract.go
 	go build -o $@ $<
@@ -30,8 +29,11 @@ out/noad.sample2.html: $(CACHE) words-sample.txt $(CSS_FILES) format
 out/noad.txt: $(CACHE) format
 	./format --mode=text  $< > $@
 
-out/a.html: $(CACHE) format
-	./format --mode=htmlsplit $< out
+out/groups/a.html: $(CACHE) format $(CSS_FILES) groups_index.html
+	mkdir -p out/groups
+	cp out/*.css out/groups/
+	cp groups_index.html out/groups/index.html
+	./format --mode=htmlsplit $< out/groups
 
 clean:
 	rm -f out/*.html out/*.txt out/*.css $(CACHE) extract format

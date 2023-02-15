@@ -2,6 +2,7 @@
 /out/*.dump
 /out/*.css
 /out/*.html
+/out/groups
 
 /.noad.cache
 
