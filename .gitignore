@@ -1,8 +1,4 @@
-/out/*.txt
-/out/*.dump
-/out/*.css
-/out/*.html
-/out/groups
+/out/*
 
 /.noad.cache
 
