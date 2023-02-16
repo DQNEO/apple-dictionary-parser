@@ -75,7 +75,8 @@ func main() {
 		if outDir == "" {
 			panic("invalid argument")
 		}
-		renderSplitHTML(outDir, entries)
+		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+		renderSplitHTML(outDir, entries, selectWords)
 	case "text":
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderText(entries, selectWords)
@@ -128,7 +129,7 @@ func renderEntry(w io.Writer, title string, body []byte) {
 	fmt.Fprintln(w, closingTag)
 }
 
-func renderSplitHTML(outDir string, entries []*RawEntry) {
+func renderSplitHTML(outDir string, entries []*RawEntry, selectWords SelectWords) {
 	var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
 	var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
 	for _, letter := range letters {
@@ -146,6 +147,9 @@ func renderSplitHTML(outDir string, entries []*RawEntry) {
 		f.Write([]byte(GenHtmlHeader(htmlTitle, true)))
 	}
 	for _, ent := range entries {
+		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
+			continue
+		}
 		t := ent.Title[0]
 		f, found := files[t]
 		if !found {
