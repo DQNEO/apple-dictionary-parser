@@ -19,8 +19,8 @@ const htmlHeader = `<!doctype html>
 <body>
 `
 
-const defaultCssFile = "out/DefaultStyle.css"
-const cstmCssFile = "out/customize.css"
+const defaultCssFile = "/tmp/DefaultStyle.css"
+const cstmCssFile = "/tmp/customize.css"
 
 func GetInternalCssBlock() string {
 	defaultCss, err := os.ReadFile(defaultCssFile)
