@@ -94,6 +94,22 @@ func parseEntry(entry []byte) *Entry {
 	}
 }
 
+func ParseBinaryFile(filePath string) []*Entry {
+	var entries []*Entry
+	chunks := parseBinaryFile(filePath)
+	for _, chunk := range chunks {
+		rawEntries := parseChunk(chunk)
+		for _, rawEntry := range rawEntries {
+			e := parseEntry(rawEntry)
+			entries = append(entries, e)
+			if e.Title == "°" { // last title
+				return entries
+			}
+		}
+	}
+	panic("internal error")
+}
+
 const DLMT = "\t"
 
 func main() {
@@ -102,15 +118,8 @@ func main() {
 		os.Exit(1)
 	}
 	var filePath = os.Args[1]
-	chunks := parseBinaryFile(filePath)
-	for _, chunk := range chunks {
-		rawEntries := parseChunk(chunk)
-		for _, rawEntry := range rawEntries {
-			e := parseEntry(rawEntry)
-			fmt.Printf("%s%s%s\n", e.Title, DLMT, e.Body)
-			if e.Title == "°" { // last title
-				return
-			}
-		}
+	entries := ParseBinaryFile(filePath)
+	for _, e := range entries {
+		fmt.Printf("%s%s%s\n", e.Title, DLMT, e.Body)
 	}
 }
