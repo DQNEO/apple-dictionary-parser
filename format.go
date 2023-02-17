@@ -65,7 +65,8 @@ func main() {
 			panic("invalid argument")
 		}
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-		analyzeEtymology(outDir, entries, selectWords)
+		slice, mp := collectEtymology(entries, selectWords)
+		formatEtymologyToText(outDir, slice, mp)
 	case "html":
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		oFile := os.Stdout
@@ -205,21 +206,48 @@ func convEntryToText(ent *RawEntry) string {
 	return ToOneline(et)
 }
 
-func analyzeEtymology(outDir string, entries []*RawEntry, selectWords SelectWords) {
-	fileE2O, err := os.Create(outDir + "/english2origin.txt")
+type BackEtymLink struct {
+	EngWord     string
+	OriginWords []string
+}
+
+type EtymMap map[string][]string
+
+func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forwardEtymMap EtymMap) {
+	const e2oFileName = "english2origin.txt"
+	const o2eFileName = "origin2english.txt"
+
+	fileE2O, err := os.Create(outDir + "/" + e2oFileName)
 	if err != nil {
 		panic(err)
 	}
 	defer fileE2O.Close()
-	fileO2E, err := os.Create(outDir + "/origin2english.txt")
+
+	for _, bel := range backEtymLinks {
+		fmt.Fprintf(fileE2O, "[%s] %s\n", bel.EngWord, strings.Join(bel.OriginWords, ","))
+	}
+
+	var uniqFFs []string
+	for k, _ := range forwardEtymMap {
+		uniqFFs = append(uniqFFs, k)
+	}
+	sort.Strings(uniqFFs)
+	fileO2E, err := os.Create(outDir + "/" + o2eFileName)
 	if err != nil {
 		panic(err)
 	}
 	defer fileO2E.Close()
+	for _, ff := range uniqFFs {
+		v := forwardEtymMap[ff]
+		fmt.Fprintf(fileO2E, "[%s] %s\n", ff, strings.Join(v, ","))
+	}
 
-	var o2eMap = make(map[string][]string, len(entries))
+}
+
+func collectEtymology(entries []*RawEntry, selectWords SelectWords) ([]*BackEtymLink, EtymMap) {
+	var forwardEtymMap = make(EtymMap, len(entries))
 	var allFF []string
-
+	var backEtymLinks []*BackEtymLink
 	for _, ent := range entries {
 		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
@@ -228,21 +256,16 @@ func analyzeEtymology(outDir string, entries []*RawEntry, selectWords SelectWord
 		if len(e.Etym) == 0 {
 			continue
 		}
-		fmt.Fprintf(fileE2O, "[%s] %s\n", ent.Title, strings.Join(e.FFWords, ","))
+		backEtymLinks = append(backEtymLinks, &BackEtymLink{
+			EngWord:     ent.Title,
+			OriginWords: e.FFWords,
+		})
 		for _, ff := range e.FFWords {
-			o2eMap[ff] = append(o2eMap[ff], ent.Title)
+			forwardEtymMap[ff] = append(forwardEtymMap[ff], ent.Title)
 			allFF = append(allFF, ff)
 		}
 	}
-	var uniqFFs []string
-	for k, _ := range o2eMap {
-		uniqFFs = append(uniqFFs, k)
-	}
-	sort.Strings(uniqFFs)
-	for _, ff := range uniqFFs {
-		v := o2eMap[ff]
-		fmt.Fprintf(fileO2E, "[%s] %s\n", ff, strings.Join(v, ","))
-	}
+	return backEtymLinks, forwardEtymMap
 }
 
 func renderForDebug(entries []*RawEntry, selectWords SelectWords) {
