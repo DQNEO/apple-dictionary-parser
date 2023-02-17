@@ -69,8 +69,8 @@ func parseChunk(buf []byte) [][]byte {
 }
 
 type Entry struct {
-	Title string
-	Body  []byte
+	Title string // word
+	Body  []byte // word definition in XML
 }
 
 const titleStartMarker = `d:title="`
@@ -86,6 +86,8 @@ func parseEntry(entry []byte) *Entry {
 	}
 }
 
+var LastTitle = "°"
+
 func ParseBinaryFile(filePath string) []*Entry {
 	var entries []*Entry
 	chunks := parseBinaryFile(filePath)
@@ -94,10 +96,10 @@ func ParseBinaryFile(filePath string) []*Entry {
 		for _, rawEntry := range rawEntries {
 			e := parseEntry(rawEntry)
 			entries = append(entries, e)
-			if e.Title == "°" { // last title
+			if e.Title == LastTitle {
 				return entries
 			}
 		}
 	}
-	panic("internal error")
+	panic("internal error (probably last title does not match what we expect")
 }
