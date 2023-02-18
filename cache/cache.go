@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-const DEFAULT_PATH = "noad.cache"
+const DEFAULT_PATH = "/tmp/noad.cache"
 
 const DLMT = "\t"
 
