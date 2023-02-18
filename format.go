@@ -16,11 +16,11 @@ import (
 var flagMode = flag.String("mode", "", "output format (html or text)")
 var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+var flagCacheFilePath = flag.String("cache-file", "/tmp/.noad.cache", "cache file path")
 
 func main() {
 	flag.Parse()
-	cacheFilePath := flag.Arg(0)
-	entries := cache.LoadFromCacheFile(cacheFilePath)
+	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 
 	switch *flagMode {
 	case "debug":
@@ -28,7 +28,7 @@ func main() {
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderForDebug(entries, selectWords)
 	case "etym":
-		outDir := flag.Arg(1)
+		outDir := flag.Arg(0)
 		if outDir == "" {
 			panic("invalid argument")
 		}
@@ -40,7 +40,7 @@ func main() {
 		oFile := os.Stdout
 		renderSingleHTML(oFile, entries, selectWords)
 	case "htmlsplit":
-		outDir := flag.Arg(1)
+		outDir := flag.Arg(0)
 		if outDir == "" {
 			panic("invalid argument")
 		}
