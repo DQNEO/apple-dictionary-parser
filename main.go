@@ -195,7 +195,11 @@ func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forward
 	defer fileE2O.Close()
 
 	for _, bel := range backEtymLinks {
-		fmt.Fprintf(fileE2O, "[%s] %s\n", bel.EngWord, strings.Join(bel.OriginWords, ","))
+		if len(bel.OriginWords) == 0 {
+			continue
+		}
+		// inline yaml
+		fmt.Fprintf(fileE2O, "%s:[%s]\n", bel.EngWord, strings.Join(bel.OriginWords, ","))
 	}
 
 	var uniqFFs []string
@@ -208,9 +212,11 @@ func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forward
 		panic(err)
 	}
 	defer fileO2E.Close()
+
 	for _, ff := range uniqFFs {
 		v := forwardEtymMap[ff]
-		fmt.Fprintf(fileO2E, "[%s] %s\n", ff, strings.Join(v, ","))
+		// inline yaml
+		fmt.Fprintf(fileO2E, "%s:[%s]\n", ff, strings.Join(v, ","))
 	}
 
 }
@@ -219,7 +225,6 @@ func collectEtymology(entries []*raw.Entry, selectWords SelectWords) ([]*BackEty
 	var forwardEtymMap = make(EtymMap, len(entries))
 	var allFF []string
 	var backEtymLinks []*BackEtymLink
-
 	for _, ent := range entries {
 		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
