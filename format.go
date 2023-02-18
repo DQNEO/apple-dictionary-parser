@@ -1,49 +1,17 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
+	"github.com/DQNEO/apple-dictionary/cache"
 	"io"
 	"os"
 	"sort"
 	"strings"
 
+	"github.com/DQNEO/apple-dictionary/extracter/raw"
 	"github.com/DQNEO/apple-dictionary/parser"
 )
-
-const SPLT = "\t"
-
-type RawEntry struct {
-	Title string
-	Body  []byte
-}
-
-func parseDumpFile(path string) []*RawEntry {
-	var r []*RawEntry
-	contents, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	lines := bytes.Split(contents, []byte{'\n'})
-	for _, line := range lines[:] {
-		if len(line) == 0 {
-			// Possibly end of file
-			continue
-		}
-		ttlBytes, rawBody, found := bytes.Cut(line, []byte(SPLT))
-		if !found {
-			panic("failed to Cut:" + (string(line)))
-		}
-		title := string(ttlBytes)
-		e := &RawEntry{
-			Title: title,
-			Body:  rawBody,
-		}
-		r = append(r, e)
-	}
-	return r
-}
 
 var flagMode = flag.String("mode", "", "output format (html or text)")
 var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
@@ -51,8 +19,8 @@ var flagWordsFile = flag.String("words-file", "", "limit words by the given file
 
 func main() {
 	flag.Parse()
-	rawDumpFile := flag.Arg(0)
-	entries := parseDumpFile(rawDumpFile)
+	cacheFilePath := flag.Arg(0)
+	entries := cache.LoadFromCacheFile(cacheFilePath)
 
 	switch *flagMode {
 	case "debug":
@@ -130,7 +98,7 @@ func renderEntry(w io.Writer, title string, body []byte) {
 	fmt.Fprintln(w, closingTag)
 }
 
-func renderSplitHTML(outDir string, entries []*RawEntry, selectWords SelectWords) {
+func renderSplitHTML(outDir string, entries []*raw.Entry, selectWords SelectWords) {
 	var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
 	var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
 	for _, letter := range letters {
@@ -160,7 +128,7 @@ func renderSplitHTML(outDir string, entries []*RawEntry, selectWords SelectWords
 	}
 }
 
-func renderSingleHTML(w io.Writer, entries []*RawEntry, selectWords SelectWords) {
+func renderSingleHTML(w io.Writer, entries []*raw.Entry, selectWords SelectWords) {
 	htmlTitle := "NOAD HTML as a single file"
 	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true))
 	for _, ent := range entries {
@@ -198,7 +166,7 @@ func ToOneline(e *parser.Entry) string {
 	return strings.Join(fields, " ")
 }
 
-func convEntryToText(ent *RawEntry) string {
+func convEntryToText(ent *raw.Entry) string {
 	title := ent.Title
 	body := ent.Body
 	et := parser.ParseEntry(title, body)
@@ -245,7 +213,7 @@ func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forward
 
 }
 
-func collectEtymology(entries []*RawEntry, selectWords SelectWords) ([]*BackEtymLink, EtymMap) {
+func collectEtymology(entries []*raw.Entry, selectWords SelectWords) ([]*BackEtymLink, EtymMap) {
 	var forwardEtymMap = make(EtymMap, len(entries))
 	var allFF []string
 	var backEtymLinks []*BackEtymLink
@@ -271,7 +239,7 @@ func collectEtymology(entries []*RawEntry, selectWords SelectWords) ([]*BackEtym
 	return backEtymLinks, forwardEtymMap
 }
 
-func renderForDebug(entries []*RawEntry, selectWords SelectWords) {
+func renderForDebug(entries []*raw.Entry, selectWords SelectWords) {
 	var ffMap = make(map[string][]string, len(entries))
 	var ffRevMap = make(map[string][]string, len(entries))
 	for _, ent := range entries {
@@ -310,7 +278,7 @@ func renderForDebug(entries []*RawEntry, selectWords SelectWords) {
 	}
 }
 
-func renderText(entries []*RawEntry, selectWords SelectWords) {
+func renderText(entries []*raw.Entry, selectWords SelectWords) {
 	for _, ent := range entries {
 		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
