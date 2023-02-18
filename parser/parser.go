@@ -213,6 +213,7 @@ func parseEtym(title string, e *etree.Element) (Etymology, []string) {
 				if strings.Contains(s, ":") {
 					//fmt.Fprintf(os.Stderr, "dected : in '%s' . SKIP\n", s)
 				} else {
+					s = strings.TrimPrefix(s, "'")
 					ffwords = append(ffwords, s)
 					fmt.Fprintf(DebugWriter, "    <ff>%s</ff>\n", s)
 				}
