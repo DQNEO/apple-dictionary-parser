@@ -21,6 +21,7 @@ var flagCacheFilePath = flag.String("cache-file", cache.DEFAULT_PATH, "cache fil
 func main() {
 	flag.Parse()
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	//println("entries=", len(entries), *flagCacheFilePath)
 
 	switch *flagMode {
 	case "debug":
@@ -34,6 +35,7 @@ func main() {
 		}
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		slice, mp := collectEtymology(entries, selectWords)
+		//println(len(slice), len(mp))
 		formatEtymologyToText(outDir, slice, mp)
 	case "html":
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
