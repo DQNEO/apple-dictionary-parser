@@ -3,6 +3,7 @@ package extracter
 import (
 	"bytes"
 	"compress/zlib"
+	"github.com/DQNEO/apple-dictionary/extracter/raw"
 	"io"
 	"os"
 )
@@ -68,19 +69,14 @@ func parseChunk(buf []byte) [][]byte {
 	}
 }
 
-type Entry struct {
-	Title string // word
-	Body  []byte // word definition in XML
-}
-
 const titleStartMarker = `d:title="`
 
-func parseEntry(entry []byte) *Entry {
+func parseEntry(entry []byte) *raw.Entry {
 	titleStart := bytes.Index(entry, []byte(titleStartMarker)) + len(titleStartMarker)
 	titleLen := bytes.Index(entry[titleStart:], []byte(`"`))
 	title := entry[titleStart : titleStart+titleLen]
 
-	return &Entry{
+	return &raw.Entry{
 		Title: string(title),
 		Body:  entry,
 	}
@@ -88,8 +84,8 @@ func parseEntry(entry []byte) *Entry {
 
 var LastTitle = "°"
 
-func ParseBinaryFile(filePath string) []*Entry {
-	var entries []*Entry
+func ParseBinaryFile(filePath string) []*raw.Entry {
+	var entries []*raw.Entry
 	chunks := parseBinaryFile(filePath)
 	for _, chunk := range chunks {
 		rawEntries := parseChunk(chunk)

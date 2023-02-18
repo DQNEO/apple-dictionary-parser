@@ -23,8 +23,5 @@ func main() {
 	var cacheFile = os.Stdout
 
 	entries := extracter.ParseBinaryFile(dicFilePath)
-	for _, e := range entries {
-		s := cache.EntryToText(e.Title, e.Body)
-		fmt.Fprint(cacheFile, s)
-	}
+	cache.SaveEntries(cacheFile, entries)
 }
