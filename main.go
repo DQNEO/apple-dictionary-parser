@@ -188,12 +188,12 @@ const e2oFileName = "english2origin"
 const o2eFileName = "origin2english"
 
 func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forwardEtymMap EtymMap) {
-	fileE2O, err := os.Create(fmt.Sprintf("%s/%s.txt", outDir, e2oFileName))
+	fileE2O, err := os.Create(fmt.Sprintf("%s/%s.yml", outDir, e2oFileName))
 	if err != nil {
 		panic(err)
 	}
 	defer fileE2O.Close()
-
+	fmt.Fprint(fileE2O, "---\n")
 	for _, bel := range backEtymLinks {
 		if len(bel.OriginWords) == 0 {
 			continue
@@ -207,7 +207,9 @@ func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forward
 		uniqFFs = append(uniqFFs, k)
 	}
 	sort.Strings(uniqFFs)
-	fileO2E, err := os.Create(fmt.Sprintf("%s/%s.txt", outDir, o2eFileName))
+	fileO2E, err := os.Create(fmt.Sprintf("%s/%s.yml", outDir, o2eFileName))
+	fmt.Fprint(fileO2E, "---\n")
+
 	if err != nil {
 		panic(err)
 	}
