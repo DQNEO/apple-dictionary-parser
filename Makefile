@@ -1,7 +1,7 @@
 # run make command as follows
 # make DICT_FILE="/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX/xxxx.asset/AssetData/New Oxford American Dictionary.dictionary/Contents/Resources/Body.data"
 CSS_FILES := /tmp/DefaultStyle.css /tmp/customize.css
-CACHE := /tmp/.noad.cache
+CACHE := noad.cache
 
 all: out/groups/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
 
@@ -11,10 +11,10 @@ all: out/groups/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
 /tmp/customize.css: customize.css
 	cp $< $@
 
-extract: extract.go
+extract: extract.go cache/* extracter/*/*
 	go build -o $@ $<
 
-adp: main.go html_template.go parser/*
+adp: main.go html_template.go  cache/* extracter/*/* parser/*
 	go build -o $@ main.go html_template.go
 
 $(CACHE): extract
