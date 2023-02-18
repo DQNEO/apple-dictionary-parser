@@ -18,7 +18,7 @@ adp: main.go html_template.go parser/*
 	go build -o $@ main.go html_template.go
 
 $(CACHE): extract
-	 ./extract  -o $@ "${DICT_FILE}"
+	 ./extract "${DICT_FILE}"
 
 out/noad.sample1.html: $(CACHE) $(CSS_FILES) adp
 	./adp --mode=html --words=happiness,joy,felicity,pleasure > $@

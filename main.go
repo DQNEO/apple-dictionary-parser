@@ -16,7 +16,7 @@ import (
 var flagMode = flag.String("mode", "", "output format (html or text)")
 var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-var flagCacheFilePath = flag.String("cache-file", "/tmp/.noad.cache", "cache file path")
+var flagCacheFilePath = flag.String("cache-file", cache.DEFAULT_PATH, "cache file path")
 
 func main() {
 	flag.Parse()

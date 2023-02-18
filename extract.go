@@ -16,7 +16,7 @@ import (
 	"os"
 )
 
-var outFilePath = flag.String("o", "", "output file")
+var outFilePath = flag.String("o", cache.DEFAULT_PATH, "output file")
 
 func main() {
 	flag.Parse()

@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+const DEFAULT_PATH = "/tmp/.noad.cache"
+
 const DLMT = "\t"
 
 func SaveEntries(w io.Writer, entries []*raw.Entry) {
