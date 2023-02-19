@@ -204,13 +204,13 @@ const EtymHTMLTemplate = `
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+	<style>
+	%s
+	</style>
     <title>%s</title>
-<style>
-%s
-</style>
 </head>
 <body>
-<h1>NOAD Etymology - English to Origins</h1>
+<h1>%s</h1>
 <table class="table"> %s </table>
 </body>
 </html>
@@ -229,7 +229,8 @@ func formatEtymologyToHTML(outDir string, backEtymLinks []*BackEtymLink, forward
 		}
 		trs = append(trs, fmt.Sprintf("<tr><td class=\"head_word\" id=\"%s\">%s</td><td>%s</td></tr>\n", bel.EngWord, bel.EngWord, strings.Join(bel.OriginWords, ", ")))
 	}
-	fmt.Fprintf(fileE2O, EtymHTMLTemplate, "NOAD Etymology Egnlish to Origin", EtymStyle, strings.Join(trs, "\n"))
+	title := "NOAD Etymology English to Origin"
+	fmt.Fprintf(fileE2O, EtymHTMLTemplate, EtymStyle, title, title, strings.Join(trs, "\n"))
 	var uniqFFs []string
 	for k, _ := range forwardEtymMap {
 		uniqFFs = append(uniqFFs, k)
@@ -246,7 +247,9 @@ func formatEtymologyToHTML(outDir string, backEtymLinks []*BackEtymLink, forward
 		v := forwardEtymMap[ff]
 		trs = append(trs, fmt.Sprintf("<tr><td class=\"head_word\" id=\"%s\">%s</td><td>%s</td></tr>\n", ff, ff, strings.Join(v, ", ")))
 	}
-	fmt.Fprintf(fileO2E, EtymHTMLTemplate, "NOAD Etymology Origin to English", EtymStyle, strings.Join(trs, "\n"))
+	title = "NOAD Etymology Origin to English"
+
+	fmt.Fprintf(fileO2E, EtymHTMLTemplate, EtymStyle, title, title, strings.Join(trs, "\n"))
 }
 
 func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forwardEtymMap EtymMap) {
