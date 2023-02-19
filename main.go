@@ -37,6 +37,7 @@ func main() {
 		slice, mp := collectEtymology(entries, selectWords)
 		//println(len(slice), len(mp))
 		formatEtymologyToText(outDir, slice, mp)
+		formatEtymologyToHTML(outDir, slice, mp)
 	case "html":
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		oFile := os.Stdout
@@ -186,6 +187,71 @@ type EtymMap map[string][]string
 // @TODO: make html, json and yaml formatter as well
 const e2oFileName = "english2origin"
 const o2eFileName = "origin2english"
+
+const EtymStyle = `
+.table { width: 100%; ...}
+.table thead {
+  background: #d3edeb;
+}
+.table th,.table td {
+    border: 1px solid #ccc; padding: 10px;
+}
+.english {
+    width:15em;
+}
+`
+
+const EtymHTMLTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NOAD Etymology</title>
+<style>
+%s
+</style>
+</head>
+<body>
+<h1>NOAD Etymology - English to Origins</h1>
+<table class="table"> %s </table>
+</body>
+</html>
+`
+
+func formatEtymologyToHTML(outDir string, backEtymLinks []*BackEtymLink, forwardEtymMap EtymMap) {
+	fileE2O, err := os.Create(fmt.Sprintf("%s/%s.html", outDir, e2oFileName))
+	if err != nil {
+		panic(err)
+	}
+	defer fileE2O.Close()
+	var trs []string
+	for _, bel := range backEtymLinks {
+		if len(bel.OriginWords) == 0 {
+			continue
+		}
+		// inline yaml
+		trs = append(trs, fmt.Sprintf("<tr><td class=\"english\" id=\"%s\">%s</td><td>%s</td></tr>\n", bel.EngWord, bel.EngWord, strings.Join(bel.OriginWords, ", ")))
+	}
+	fmt.Fprintf(fileE2O, EtymHTMLTemplate, EtymStyle, strings.Join(trs, "\n"))
+	var uniqFFs []string
+	for k, _ := range forwardEtymMap {
+		uniqFFs = append(uniqFFs, k)
+	}
+	sort.Strings(uniqFFs)
+	fileO2E, err := os.Create(fmt.Sprintf("%s/%s.html", outDir, o2eFileName))
+	fmt.Fprint(fileO2E, "<html>")
+
+	if err != nil {
+		panic(err)
+	}
+	defer fileO2E.Close()
+
+	for _, ff := range uniqFFs {
+		v := forwardEtymMap[ff]
+		// inline yaml
+		fmt.Fprintf(fileO2E, "%s:[%s]\n", ff, strings.Join(v, ","))
+	}
+}
 
 func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forwardEtymMap EtymMap) {
 	fileE2O, err := os.Create(fmt.Sprintf("%s/%s.yml", outDir, e2oFileName))
