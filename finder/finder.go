@@ -1,13 +1,13 @@
 package finder
 
 import (
-	"fmt"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 )
 
-func FindFiles(baseDir string) (string, string, string, error) {
+func FindDictFile(baseDir string) (string, string, error) {
 	var foundDicDir string
 	err := filepath.Walk(baseDir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -29,10 +29,21 @@ func FindFiles(baseDir string) (string, string, string, error) {
 		panic(err)
 	}
 	if foundDicDir == "" {
-		fmt.Fprintf(os.Stderr, "Dictionary directory is not found")
-		os.Exit(1)
+		return "", "", errors.New("Dictionary directory is not found")
 	}
 	bodyFile := foundDicDir + "/Contents/Resources/Body.data"
-	cssFile := foundDicDir + "/Contents/Resources/DefaultStyle.css"
-	return foundDicDir, bodyFile, cssFile, nil
+	_, err = os.Stat(bodyFile)
+	if err != nil {
+		return "", "", err
+	}
+	return foundDicDir, bodyFile, nil
+}
+
+func FindDefaultCSSFile(dictDir string) (string, error) {
+	cssFile := dictDir + "/Contents/Resources/DefaultStyle.css"
+	_, err := os.Stat(cssFile)
+	if err != nil {
+		return "", err
+	}
+	return cssFile, nil
 }

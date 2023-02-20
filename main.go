@@ -25,13 +25,11 @@ func main() {
 	switch *flagMode {
 	case "find":
 		baseDir := "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
-		foundDicDir, bodyFile, cssFile, err := finder.FindFiles(baseDir)
+		_, bodyFile, err := finder.FindDictFile(baseDir)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(foundDicDir)
-		fmt.Println(bodyFile)
-		fmt.Println(cssFile)
+		fmt.Printf("'%s'\n", bodyFile)
 	case "dump":
 		dicFilePath := flag.Arg(0)
 		if dicFilePath == "" {
