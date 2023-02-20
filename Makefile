@@ -4,13 +4,11 @@ OUT_DIR := /tmp/adp
 
 all: $(OUT_DIR)/groups/a.html $(OUT_DIR)/noad.sample1.html $(OUT_DIR)/noad.sample2.html $(OUT_DIR)/noad.txt
 
-$(PROG): *.go cache/* extracter/*/* finder/* parser/* go.mod customize.css $(OUT_DIR)
+$(PROG): *.go cache/* extracter/*/* finder/* parser/* go.mod customize.css
 	go build -o $@
 
 $(CACHE): $(PROG)
 	 $(PROG) --mode=dump
-
-$(OUT_DIR):
 	mkdir -p $@
 
 $(OUT_DIR)/noad.sample1.html: $(CACHE) $(PROG)
