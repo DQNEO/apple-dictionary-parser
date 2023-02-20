@@ -18,30 +18,44 @@ var flagMode = flag.String("mode", "", "output format (html or text)")
 var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
 var flagCacheFilePath = flag.String("cache-file", cache.DEFAULT_PATH, "cache file path")
+var flagDictFilePath = flag.String("dict-file", "", "dictionary file path")
+
+const dictBaseDir = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
 
 func main() {
 	flag.Parse()
 
 	switch *flagMode {
 	case "find":
-		baseDir := "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
-		_, bodyFile, err := finder.FindDictFile(baseDir)
+		_, dictFilePath, err := finder.FindDictFile(dictBaseDir)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("'%s'\n", bodyFile)
+		fmt.Printf("'%s'\n", dictFilePath)
 	case "dump":
-		dicFilePath := flag.Arg(0)
-		if dicFilePath == "" {
-			fmt.Fprintf(os.Stderr, "Please specify a dictionary body file.\n For example: '/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX/xxxxxx.asset/AssetData/New Oxford American Dictionary.dictionary/Contents/Resources/Body.data'\n")
-			os.Exit(1)
+		var dictFilePath string
+		if *flagDictFilePath == "" {
+			fmt.Printf("Searching Dictionary file ...\n")
+			_, found, err := finder.FindDictFile(dictBaseDir)
+			if err != nil {
+				panic(err)
+			}
+			if found == "" {
+				panic("File not found")
+			}
+			fmt.Printf("Dictionary file is found at '%s'\n", found)
+			dictFilePath = found
+		} else {
+			dictFilePath = *flagDictFilePath
 		}
+		fmt.Printf("Extracting the dictionary file ...\n")
+		entries := extracter.ParseBinaryFile(dictFilePath)
 		oFile, err := os.Create(*flagCacheFilePath)
 		if err != nil {
 			panic(err)
 		}
-		entries := extracter.ParseBinaryFile(dicFilePath)
 		cache.SaveEntries(oFile, entries)
+		fmt.Printf("Dictonary raw data is successfully saved to: %s\n", *flagCacheFilePath)
 	case "debug":
 		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 		parser.DebugWriter = os.Stderr

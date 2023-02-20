@@ -1,7 +1,6 @@
-# run make command as follows
-# make DICT_FILE="/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX/xxxx.asset/AssetData/New Oxford American Dictionary.dictionary/Contents/Resources/Body.data"
 CSS_FILES := /tmp/DefaultStyle.css /tmp/customize.css
 CACHE := /tmp/noad.cache
+PROG := ./adp
 
 all: out/groups/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
 
@@ -11,36 +10,36 @@ all: out/groups/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
 /tmp/customize.css: customize.css
 	cp $< $@
 
-adp: main.go html_template.go  cache/* extracter/*/* parser/* go.mod
+$(PROG): main.go html_template.go  cache/* extracter/*/* finder/* parser/* go.mod
 	go build -o $@ main.go html_template.go
 
-$(CACHE): adp
-	 ./adp --mode=dump "${DICT_FILE}"
+$(CACHE): $(PROG)
+	 $(PROG) --mode=dump
 
-out/noad.sample1.html: $(CACHE) $(CSS_FILES) adp
-	./adp --mode=html --words=happiness,joy,felicity,pleasure > $@
+out/noad.sample1.html: $(CACHE) $(CSS_FILES) $(PROG)
+	$(PROG) --mode=html --words=happiness,joy,felicity,pleasure > $@
 
-out/noad.sample2.html: $(CACHE) words-sample.txt $(CSS_FILES) adp
-	./adp --mode=html --words-file=words-sample.txt  > $@
+out/noad.sample2.html: $(CACHE) $(PROG) words-sample.txt $(CSS_FILES)
+	$(PROG) --mode=html --words-file=words-sample.txt  > $@
 
-out/noad.txt: $(CACHE) adp
-	./adp --mode=text > $@
+out/noad.txt: $(CACHE) $(PROG)
+	$(PROG) --mode=text > $@
 
-out/groups/a.html: $(CACHE) adp $(CSS_FILES) groups_index.html
+out/groups/a.html: $(CACHE) $(PROG) $(CSS_FILES) groups_index.html
 	mkdir -p out/groups
 	#cp out/*.css out/groups/
 	cp groups_index.html out/groups/index.html
-	./adp --mode=htmlsplit out/groups
+	$(PROG) --mode=htmlsplit out/groups
 
 
 .PHONY: etym
-etym: $(CACHE) adp
-	./adp --mode=etym out
+etym: $(CACHE) $(PROG)
+	$(PROG) --mode=etym out
 
 clean:
-	rm -fr out/* ; rm -f $(CACHE) adp
+	rm -fr out/* ; rm -f $(CACHE) $(PROG)
 
 
 .PHONY: debug
 debug: $(CACHE) adp
-	./adp --mode=debug --words-file=../lexicon/passtan1/data/2100plus.txt >out/etym.txt
+	$(PROG) --mode=debug --words-file=../lexicon/passtan1/data/2100plus.txt >out/etym.txt
