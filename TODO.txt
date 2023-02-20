@@ -1,3 +1,2 @@
 * Treat the cache file internally in go code
-* Integrate extract.go with format.go into "main.go" ?
-* Set a clear boundary between the library and applications.
+
