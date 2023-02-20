@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/DQNEO/apple-dictionary-parser/cache"
 	"github.com/DQNEO/apple-dictionary-parser/extracter"
+	"github.com/DQNEO/apple-dictionary-parser/extracter/raw"
+	"github.com/DQNEO/apple-dictionary-parser/finder"
+	"github.com/DQNEO/apple-dictionary-parser/parser"
 	"io"
 	"os"
 	"sort"
 	"strings"
-
-	"github.com/DQNEO/apple-dictionary-parser/extracter/raw"
-	"github.com/DQNEO/apple-dictionary-parser/parser"
 )
 
 var flagMode = flag.String("mode", "", "output format (html or text)")
@@ -23,6 +23,15 @@ func main() {
 	flag.Parse()
 
 	switch *flagMode {
+	case "find":
+		baseDir := "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
+		foundDicDir, bodyFile, cssFile, err := finder.FindFiles(baseDir)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(foundDicDir)
+		fmt.Println(bodyFile)
+		fmt.Println(cssFile)
 	case "dump":
 		dicFilePath := flag.Arg(0)
 		if dicFilePath == "" {
