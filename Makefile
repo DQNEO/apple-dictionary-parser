@@ -11,14 +11,11 @@ all: out/groups/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
 /tmp/customize.css: customize.css
 	cp $< $@
 
-extract: extract.go cache/* extracter/*/* go.mod
-	go build -o $@ $<
-
 adp: main.go html_template.go  cache/* extracter/*/* parser/* go.mod
 	go build -o $@ main.go html_template.go
 
-$(CACHE): extract
-	 ./extract "${DICT_FILE}"
+$(CACHE): adp
+	 ./adp --mode=dump "${DICT_FILE}"
 
 out/noad.sample1.html: $(CACHE) $(CSS_FILES) adp
 	./adp --mode=html --words=happiness,joy,felicity,pleasure > $@
@@ -31,7 +28,7 @@ out/noad.txt: $(CACHE) adp
 
 out/groups/a.html: $(CACHE) adp $(CSS_FILES) groups_index.html
 	mkdir -p out/groups
-	cp out/*.css out/groups/
+	#cp out/*.css out/groups/
 	cp groups_index.html out/groups/index.html
 	./adp --mode=htmlsplit out/groups
 
@@ -41,7 +38,7 @@ etym: $(CACHE) adp
 	./adp --mode=etym out
 
 clean:
-	rm -fr out/* ; rm -f $(CACHE) extract adp
+	rm -fr out/* ; rm -f $(CACHE) adp
 
 
 .PHONY: debug

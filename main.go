@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/DQNEO/apple-dictionary-parser/cache"
+	"github.com/DQNEO/apple-dictionary-parser/extracter"
 	"io"
 	"os"
 	"sort"
@@ -20,15 +21,27 @@ var flagCacheFilePath = flag.String("cache-file", cache.DEFAULT_PATH, "cache fil
 
 func main() {
 	flag.Parse()
-	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-	//println("entries=", len(entries), *flagCacheFilePath)
 
 	switch *flagMode {
+	case "dump":
+		dicFilePath := flag.Arg(0)
+		if dicFilePath == "" {
+			fmt.Fprintf(os.Stderr, "Please specify a dictionary body file.\n For example: '/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX/xxxxxx.asset/AssetData/New Oxford American Dictionary.dictionary/Contents/Resources/Body.data'\n")
+			os.Exit(1)
+		}
+		oFile, err := os.Create(*flagCacheFilePath)
+		if err != nil {
+			panic(err)
+		}
+		entries := extracter.ParseBinaryFile(dicFilePath)
+		cache.SaveEntries(oFile, entries)
 	case "debug":
+		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 		parser.DebugWriter = os.Stderr
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderForDebug(entries, selectWords)
 	case "etym":
+		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 		outDir := flag.Arg(0)
 		if outDir == "" {
 			panic("invalid argument")
@@ -39,10 +52,12 @@ func main() {
 		formatEtymologyToText(outDir, slice, mp)
 		formatEtymologyToHTML(outDir, slice, mp)
 	case "html":
+		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		oFile := os.Stdout
 		renderSingleHTML(oFile, entries, selectWords)
 	case "htmlsplit":
+		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 		outDir := flag.Arg(0)
 		if outDir == "" {
 			panic("invalid argument")
@@ -50,6 +65,7 @@ func main() {
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderSplitHTML(outDir, entries, selectWords)
 	case "text":
+		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		renderText(entries, selectWords)
 	default:
