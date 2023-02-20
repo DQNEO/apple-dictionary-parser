@@ -3,7 +3,7 @@ package cache
 import (
 	"bytes"
 	"fmt"
-	"github.com/DQNEO/apple-dictionary/extracter/raw"
+	"github.com/DQNEO/apple-dictionary-parser/extracter/raw"
 	"io"
 	"os"
 )

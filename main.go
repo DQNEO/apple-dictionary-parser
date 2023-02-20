@@ -3,14 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/DQNEO/apple-dictionary/cache"
+	"github.com/DQNEO/apple-dictionary-parser/cache"
 	"io"
 	"os"
 	"sort"
 	"strings"
 
-	"github.com/DQNEO/apple-dictionary/extracter/raw"
-	"github.com/DQNEO/apple-dictionary/parser"
+	"github.com/DQNEO/apple-dictionary-parser/extracter/raw"
+	"github.com/DQNEO/apple-dictionary-parser/parser"
 )
 
 var flagMode = flag.String("mode", "", "output format (html or text)")

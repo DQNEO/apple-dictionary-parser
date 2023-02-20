@@ -11,10 +11,10 @@ all: out/groups/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
 /tmp/customize.css: customize.css
 	cp $< $@
 
-extract: extract.go cache/* extracter/*/*
+extract: extract.go cache/* extracter/*/* go.mod
 	go build -o $@ $<
 
-adp: main.go html_template.go  cache/* extracter/*/* parser/*
+adp: main.go html_template.go  cache/* extracter/*/* parser/* go.mod
 	go build -o $@ main.go html_template.go
 
 $(CACHE): extract

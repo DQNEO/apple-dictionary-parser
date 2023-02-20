@@ -3,7 +3,7 @@ package extracter
 import (
 	"bytes"
 	"compress/zlib"
-	"github.com/DQNEO/apple-dictionary/extracter/raw"
+	"github.com/DQNEO/apple-dictionary-parser/extracter/raw"
 	"io"
 	"os"
 )

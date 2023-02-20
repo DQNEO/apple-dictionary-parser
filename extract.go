@@ -10,8 +10,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/DQNEO/apple-dictionary/cache"
-	"github.com/DQNEO/apple-dictionary/extracter"
+	"github.com/DQNEO/apple-dictionary-parser/cache"
+	"github.com/DQNEO/apple-dictionary-parser/extracter"
 	"io"
 	"os"
 )
