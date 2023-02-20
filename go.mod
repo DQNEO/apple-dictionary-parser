@@ -1,4 +1,4 @@
-module github.com/DQNEO/apple-dictionary
+module github.com/DQNEO/apple-dictionary-parser
 
 go 1.19
 
