@@ -1,45 +1,40 @@
-CSS_FILES := /tmp/DefaultStyle.css /tmp/customize.css
-CACHE := /tmp/noad.cache
 PROG := ./adp
+CACHE := /tmp/noad.cache
+OUT_DIR := /tmp/adp
 
-all: out/groups/a.html out/noad.sample1.html out/noad.sample2.html out/noad.txt
+all: $(OUT_DIR)/groups/a.html $(OUT_DIR)/noad.sample1.html $(OUT_DIR)/noad.sample2.html $(OUT_DIR)/noad.txt
 
-/tmp/DefaultStyle.css:
-	DIR=`dirname "${DICT_FILE}"`; cp "$$DIR/DefaultStyle.css" $@
-
-/tmp/customize.css: customize.css
-	cp $< $@
-
-$(PROG): main.go html_template.go  cache/* extracter/*/* finder/* parser/* go.mod
-	go build -o $@ main.go html_template.go
+$(PROG): *.go cache/* extracter/*/* finder/* parser/* go.mod customize.css $(OUT_DIR)
+	go build -o $@
 
 $(CACHE): $(PROG)
 	 $(PROG) --mode=dump
 
-out/noad.sample1.html: $(CACHE) $(CSS_FILES) $(PROG)
+$(OUT_DIR):
+	mkdir -p $@
+
+$(OUT_DIR)/noad.sample1.html: $(CACHE) $(PROG)
 	$(PROG) --mode=html --words=happiness,joy,felicity,pleasure > $@
 
-out/noad.sample2.html: $(CACHE) $(PROG) words-sample.txt $(CSS_FILES)
+$(OUT_DIR)/noad.sample2.html: $(CACHE) $(PROG) words-sample.txt
 	$(PROG) --mode=html --words-file=words-sample.txt  > $@
 
-out/noad.txt: $(CACHE) $(PROG)
+$(OUT_DIR)/noad.txt: $(CACHE) $(PROG)
 	$(PROG) --mode=text > $@
 
-out/groups/a.html: $(CACHE) $(PROG) $(CSS_FILES) groups_index.html
-	mkdir -p out/groups
-	#cp out/*.css out/groups/
-	cp groups_index.html out/groups/index.html
-	$(PROG) --mode=htmlsplit out/groups
+$(OUT_DIR)/groups/a.html: $(CACHE) $(PROG) groups_index.html
+	mkdir -p $(OUT_DIR)/groups
+	cp groups_index.html $(OUT_DIR)/groups/index.html
+	$(PROG) --mode=htmlsplit $(OUT_DIR)/groups
 
 
 .PHONY: etym
 etym: $(CACHE) $(PROG)
-	$(PROG) --mode=etym out
+	$(PROG) --mode=etym $(OUT_DIR)
 
 clean:
-	rm -fr out/* ; rm -f $(CACHE) $(PROG)
-
+	rm -fr $(CACHE) $(PROG) $(OUT_DIR)
 
 .PHONY: debug
 debug: $(CACHE) adp
-	$(PROG) --mode=debug --words-file=../lexicon/passtan1/data/2100plus.txt >out/etym.txt
+	$(PROG) --mode=debug --words-file=../lexicon/passtan1/data/2100plus.txt > $(OUT_DIR)/debug.txt

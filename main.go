@@ -27,24 +27,25 @@ func main() {
 
 	switch *flagMode {
 	case "find":
-		_, dictFilePath, err := finder.FindDictFile(dictBaseDir)
+		_, dictFilePath, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Printf("'%s'\n", dictFilePath)
+		fmt.Printf("'%s'\n", defaultCssPath)
 	case "dump":
 		var dictFilePath string
 		if *flagDictFilePath == "" {
 			fmt.Printf("Searching Dictionary file ...\n")
-			_, found, err := finder.FindDictFile(dictBaseDir)
+			_, bodyFilePath, _, err := finder.FindDictFile(dictBaseDir)
 			if err != nil {
 				panic(err)
 			}
-			if found == "" {
-				panic("File not found")
+			if bodyFilePath == "" {
+				panic("File not bodyFilePath")
 			}
-			fmt.Printf("Dictionary file is found at '%s'\n", found)
-			dictFilePath = found
+			fmt.Printf("Dictionary file is bodyFilePath at '%s'\n", bodyFilePath)
+			dictFilePath = bodyFilePath
 		} else {
 			dictFilePath = *flagDictFilePath
 		}
@@ -74,17 +75,25 @@ func main() {
 		formatEtymologyToHTML(outDir, slice, mp)
 	case "html":
 		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+		_, _, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
+		if err != nil {
+			panic(err)
+		}
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 		oFile := os.Stdout
-		renderSingleHTML(oFile, entries, selectWords)
+		renderSingleHTML(defaultCssPath, oFile, entries, selectWords)
 	case "htmlsplit":
 		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+		_, _, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
+		if err != nil {
+			panic(err)
+		}
 		outDir := flag.Arg(0)
 		if outDir == "" {
 			panic("invalid argument")
 		}
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-		renderSplitHTML(outDir, entries, selectWords)
+		renderSplitHTML(defaultCssPath, outDir, entries, selectWords)
 	case "text":
 		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
@@ -138,7 +147,7 @@ func renderEntry(w io.Writer, title string, body []byte) {
 	fmt.Fprintln(w, closingTag)
 }
 
-func renderSplitHTML(outDir string, entries []*raw.Entry, selectWords SelectWords) {
+func renderSplitHTML(defaultCssPath string, outDir string, entries []*raw.Entry, selectWords SelectWords) {
 	var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
 	var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
 	for _, letter := range letters {
@@ -153,7 +162,7 @@ func renderSplitHTML(outDir string, entries []*raw.Entry, selectWords SelectWord
 		}(f)
 		files[letter] = f
 		htmlTitle := "NOAD - " + strings.ToUpper(string(letter))
-		f.Write([]byte(GenHtmlHeader(htmlTitle, true)))
+		f.Write([]byte(GenHtmlHeader(htmlTitle, true, defaultCssPath)))
 	}
 	for _, ent := range entries {
 		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
@@ -168,9 +177,9 @@ func renderSplitHTML(outDir string, entries []*raw.Entry, selectWords SelectWord
 	}
 }
 
-func renderSingleHTML(w io.Writer, entries []*raw.Entry, selectWords SelectWords) {
+func renderSingleHTML(cssPath string, w io.Writer, entries []*raw.Entry, selectWords SelectWords) {
 	htmlTitle := "NOAD HTML as a single file"
-	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true))
+	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true, cssPath))
 	for _, ent := range entries {
 		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue

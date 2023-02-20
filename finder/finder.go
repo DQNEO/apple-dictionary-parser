@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-func FindDictFile(baseDir string) (string, string, error) {
+func FindDictFile(baseDir string) (string, string, string, error) {
 	var foundDicDir string
 	err := filepath.Walk(baseDir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -29,14 +29,19 @@ func FindDictFile(baseDir string) (string, string, error) {
 		panic(err)
 	}
 	if foundDicDir == "" {
-		return "", "", errors.New("Dictionary directory is not found")
+		return "", "", "", errors.New("Dictionary directory is not found")
 	}
-	bodyFile := foundDicDir + "/Contents/Resources/Body.data"
-	_, err = os.Stat(bodyFile)
+	bodyFilePath := foundDicDir + "/Contents/Resources/Body.data"
+	_, err = os.Stat(bodyFilePath)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
-	return foundDicDir, bodyFile, nil
+	cssFilePath := foundDicDir + "/Contents/Resources/DefaultStyle.css"
+	_, err = os.Stat(cssFilePath)
+	if err != nil {
+		return "", "", "", err
+	}
+	return foundDicDir, bodyFilePath, cssFilePath, nil
 }
 
 func FindDefaultCSSFile(dictDir string) (string, error) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 )
@@ -19,20 +20,16 @@ const htmlHeader = `<!doctype html>
 <body>
 `
 
-const defaultCssFile = "/tmp/DefaultStyle.css"
-const cstmCssFile = "/tmp/customize.css"
+//go:embed customize.css
+var customCss string
 
-func GetInternalCssBlock() string {
-	defaultCss, err := os.ReadFile(defaultCssFile)
-	if err != nil {
-		panic(err)
-	}
-	cstmCss, err := os.ReadFile(cstmCssFile)
+func GetInternalCssBlock(defaultCssPath string) string {
+	defaultCss, err := os.ReadFile(defaultCssPath)
 	if err != nil {
 		panic(err)
 	}
 
-	return "<style>" + string(defaultCss) + "\n" + string(cstmCss) + "</style>"
+	return "<style>" + string(defaultCss) + "\n" + customCss + "</style>"
 }
 
 func GetExternalCssBlock() string {
@@ -40,10 +37,10 @@ func GetExternalCssBlock() string {
     <link rel="stylesheet" href="customize.css">`
 }
 
-func GenHtmlHeader(title string, inlineCss bool) string {
+func GenHtmlHeader(title string, inlineCss bool, defaultCssPath string) string {
 	var cssBlock string
 	if inlineCss {
-		cssBlock = GetInternalCssBlock()
+		cssBlock = GetInternalCssBlock(defaultCssPath)
 	} else {
 		cssBlock = GetExternalCssBlock()
 	}
