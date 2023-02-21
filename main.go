@@ -19,6 +19,135 @@ var flagDictFilePath = flag.String("dict-file", "", "dictionary file path")
 
 const dictBaseDir = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
 
+func doFind() {
+	dictDir, dictFilePath, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Found a dictionary resources.\n---\n")
+	fmt.Printf("Directory:\n  '%s'\n", dictDir)
+	fmt.Printf("Body file:\n  '%s'\n", dictFilePath)
+	fmt.Printf("CSS file:\n  '%s'\n", defaultCssPath)
+}
+
+func doDump() {
+	var dictFilePath string
+	if *flagDictFilePath == "" {
+		fmt.Printf("Searching Dictionary file ...\n")
+		_, bodyFilePath, _, err := finder.FindDictFile(dictBaseDir)
+		if err != nil {
+			panic(err)
+		}
+		if bodyFilePath == "" {
+			panic("File not bodyFilePath")
+		}
+		fmt.Printf("Dictionary file is bodyFilePath at '%s'\n", bodyFilePath)
+		dictFilePath = bodyFilePath
+	} else {
+		dictFilePath = *flagDictFilePath
+	}
+	fmt.Printf("Extracting the dictionary file ...\n")
+	entries := extracter.ParseBinaryFile(dictFilePath)
+	oFile, err := os.Create(*flagCacheFilePath)
+	if err != nil {
+		panic(err)
+	}
+	cache.SaveEntries(oFile, entries)
+	fmt.Printf("Dictonary raw data is successfully saved to: %s\n", *flagCacheFilePath)
+}
+
+func doEtym(args []string) {
+	flag := flag.NewFlagSet("debug", flag.ExitOnError)
+	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
+	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	flag.Parse(args)
+	outDir := flag.Arg(0)
+	if outDir == "" {
+		panic("Please specify an output directory")
+	}
+
+	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	slice, mp := collectEtymology(entries, selectWords)
+	//println(len(slice), len(mp))
+	formatEtymologyToText(outDir, slice, mp)
+	formatEtymologyToHTML(outDir, slice, mp)
+}
+
+func doHTML(args []string) {
+	flag := flag.NewFlagSet("debug", flag.ExitOnError)
+	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
+	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	flag.Parse(args)
+	outFile := flag.Arg(0)
+	if outFile == "" {
+		panic("Please specify an output filename")
+	}
+
+	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	_, _, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
+	if err != nil {
+		panic(err)
+	}
+	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	oFile, err := os.Create(outFile)
+	if err != nil {
+		panic(err)
+	}
+	renderSingleHTML(defaultCssPath, oFile, entries, selectWords)
+
+}
+
+func doHTMLSplit(args []string) {
+	flag := flag.NewFlagSet("debug", flag.ExitOnError)
+	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
+	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	flag.Parse(args)
+	outDir := flag.Arg(0)
+	if outDir == "" {
+		panic("Please specify an output directory")
+	}
+
+	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	_, _, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
+	if err != nil {
+		panic(err)
+	}
+	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	renderSplitHTML(defaultCssPath, outDir, entries, selectWords)
+}
+
+func doText(args []string) {
+	flag := flag.NewFlagSet("debug", flag.ExitOnError)
+	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
+	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	flag.Parse(args)
+	outFile := flag.Arg(0)
+	if outFile == "" {
+		panic("Please specify an output filename")
+	}
+
+	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	oFile, err := os.Create(outFile)
+	if err != nil {
+		panic(err)
+	}
+	renderText(oFile, entries, selectWords)
+}
+
+func doDebug(args []string) {
+	flag := flag.NewFlagSet("debug", flag.ExitOnError)
+	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
+	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	flag.Parse(args)
+
+	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	parser.DebugWriter = os.Stderr
+	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	renderForDebug(entries, selectWords)
+}
+
 func main() {
 	flag.Parse()
 	args := flag.Args()
@@ -28,119 +157,19 @@ func main() {
 	cmd, args := args[0], args[1:]
 	switch cmd {
 	case "find":
-		dictDir, dictFilePath, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("Found a dictionary resources.\n---\n")
-		fmt.Printf("Directory:\n  '%s'\n", dictDir)
-		fmt.Printf("Body file:\n  '%s'\n", dictFilePath)
-		fmt.Printf("CSS file:\n  '%s'\n", defaultCssPath)
+		doFind()
 	case "dump":
-		var dictFilePath string
-		if *flagDictFilePath == "" {
-			fmt.Printf("Searching Dictionary file ...\n")
-			_, bodyFilePath, _, err := finder.FindDictFile(dictBaseDir)
-			if err != nil {
-				panic(err)
-			}
-			if bodyFilePath == "" {
-				panic("File not bodyFilePath")
-			}
-			fmt.Printf("Dictionary file is bodyFilePath at '%s'\n", bodyFilePath)
-			dictFilePath = bodyFilePath
-		} else {
-			dictFilePath = *flagDictFilePath
-		}
-		fmt.Printf("Extracting the dictionary file ...\n")
-		entries := extracter.ParseBinaryFile(dictFilePath)
-		oFile, err := os.Create(*flagCacheFilePath)
-		if err != nil {
-			panic(err)
-		}
-		cache.SaveEntries(oFile, entries)
-		fmt.Printf("Dictonary raw data is successfully saved to: %s\n", *flagCacheFilePath)
+		doDump()
 	case "etym":
-		flag := flag.NewFlagSet("debug", flag.ExitOnError)
-		var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-		var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-		flag.Parse(args)
-		outDir := flag.Arg(0)
-		if outDir == "" {
-			panic("Please specify an output directory")
-		}
-
-		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-		slice, mp := collectEtymology(entries, selectWords)
-		//println(len(slice), len(mp))
-		formatEtymologyToText(outDir, slice, mp)
-		formatEtymologyToHTML(outDir, slice, mp)
+		doEtym(args)
 	case "html":
-		flag := flag.NewFlagSet("debug", flag.ExitOnError)
-		var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-		var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-		flag.Parse(args)
-		outFile := flag.Arg(0)
-		if outFile == "" {
-			panic("Please specify an output filename")
-		}
-
-		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-		_, _, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
-		if err != nil {
-			panic(err)
-		}
-		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-		oFile, err := os.Create(outFile)
-		if err != nil {
-			panic(err)
-		}
-		renderSingleHTML(defaultCssPath, oFile, entries, selectWords)
+		doHTML(args)
 	case "htmlsplit":
-		flag := flag.NewFlagSet("debug", flag.ExitOnError)
-		var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-		var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-		flag.Parse(args)
-		outDir := flag.Arg(0)
-		if outDir == "" {
-			panic("Please specify an output directory")
-		}
-
-		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-		_, _, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
-		if err != nil {
-			panic(err)
-		}
-		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-		renderSplitHTML(defaultCssPath, outDir, entries, selectWords)
+		doHTMLSplit(args)
 	case "text":
-		flag := flag.NewFlagSet("debug", flag.ExitOnError)
-		var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-		var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-		flag.Parse(args)
-		outFile := flag.Arg(0)
-		if outFile == "" {
-			panic("Please specify an output filename")
-		}
-
-		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-		oFile, err := os.Create(outFile)
-		if err != nil {
-			panic(err)
-		}
-		renderText(oFile, entries, selectWords)
+		doText(args)
 	case "debug":
-		flag := flag.NewFlagSet("debug", flag.ExitOnError)
-		var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-		var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-		flag.Parse(args)
-
-		entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-		parser.DebugWriter = os.Stderr
-		selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-		renderForDebug(entries, selectWords)
+		doDebug(args)
 	default:
 		panic("Invalid mode")
 	}
