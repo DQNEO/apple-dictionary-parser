@@ -19,7 +19,7 @@ var flagDictFilePath = flag.String("dict-file", "", "dictionary file path")
 
 const dictBaseDir = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
 
-const version = "v0.0.2"
+const version = "v0.0.3"
 
 func doVersion() {
 	fmt.Println("apple-dictionary-parser version " + version)
