@@ -1,6 +1,6 @@
 # Apple Dictionary Parser
 
-Apple Dictionary Parser is a command line tool to parser MacOS's built-in dictionary files.
+Apple Dictionary Parser is a command line tool and a library to parse and analyze MacOS's built-in dictionary files.
 
 Currently only "New Oxford American Dictionary" is supported.
 
