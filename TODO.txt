@@ -1,2 +1,5 @@
+* Run CI on GH action
+* Distribute binaries automatically
+* Add some unit tests
 
 
