@@ -75,8 +75,9 @@ func doEtym(args []string) {
 	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 	slice, mp := collectEtymology(entries, selectWords)
 	//println(len(slice), len(mp))
-	formatEtymologyToText(outDir, slice, mp)
+	formatEtymologyToYAML(outDir, slice, mp)
 	formatEtymologyToHTML(outDir, slice, mp)
+	formatEtymologyToJSON(outDir, slice, mp)
 }
 
 func doHTML(args []string) {
@@ -377,7 +378,47 @@ func formatEtymologyToHTML(outDir string, backEtymLinks []*BackEtymLink, forward
 	fmt.Fprintf(fileO2E, EtymHTMLTemplate, EtymStyle, title, title, strings.Join(trs, "\n"))
 }
 
-func formatEtymologyToText(outDir string, backEtymLinks []*BackEtymLink, forwardEtymMap EtymMap) {
+func formatEtymologyToJSON(outDir string, backEtymLinks []*BackEtymLink, forwardEtymMap EtymMap) {
+	fileE2O, err := os.Create(fmt.Sprintf("%s/%s.json", outDir, e2oFileName))
+	if err != nil {
+		panic(err)
+	}
+	defer fileE2O.Close()
+	fmt.Fprint(fileE2O, "{\n")
+	for _, bel := range backEtymLinks {
+		if len(bel.OriginWords) == 0 {
+			continue
+		}
+		// inline yaml
+		fmt.Fprintf(fileE2O, "\"%s\":[\"%s\"],\n", bel.EngWord, strings.Join(bel.OriginWords, `","`))
+	}
+	fmt.Fprint(fileE2O, "\"__EOF__\":null\n")
+	fmt.Fprint(fileE2O, "}\n")
+
+	var uniqFFs []string
+	for k, _ := range forwardEtymMap {
+		uniqFFs = append(uniqFFs, k)
+	}
+	sort.Strings(uniqFFs)
+	fileO2E, err := os.Create(fmt.Sprintf("%s/%s.json", outDir, o2eFileName))
+
+	if err != nil {
+		panic(err)
+	}
+	defer fileO2E.Close()
+
+	fmt.Fprint(fileO2E, "{\n")
+	for _, ff := range uniqFFs {
+		v := forwardEtymMap[ff]
+		// inline yaml
+		fmt.Fprintf(fileO2E, "\"%s\":[\"%s\"],\n", ff, strings.Join(v, `","`))
+	}
+	fmt.Fprint(fileO2E, "\"__EOF__\":null\n")
+	fmt.Fprint(fileO2E, "}\n")
+
+}
+
+func formatEtymologyToYAML(outDir string, backEtymLinks []*BackEtymLink, forwardEtymMap EtymMap) {
 	fileE2O, err := os.Create(fmt.Sprintf("%s/%s.yml", outDir, e2oFileName))
 	if err != nil {
 		panic(err)
