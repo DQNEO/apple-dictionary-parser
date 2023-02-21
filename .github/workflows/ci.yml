@@ -17,6 +17,9 @@ jobs:
       - name: Build
         run: go build -v ./...
 
+      - name: Install
+        run: go install -v
+
       - name: Show version
         run: ./apple-dictionary-parser version
 
