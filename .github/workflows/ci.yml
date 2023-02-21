@@ -21,7 +21,7 @@ jobs:
         run: go install -v
 
       - name: Show version
-        run: ./apple-dictionary-parser version
+        run: apple-dictionary-parser version
 
       - name: Test
         run: go test -v ./...
