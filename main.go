@@ -265,7 +265,7 @@ func renderSingleHTML(cssPath string, w io.Writer, entries []*raw.Entry, selectW
 		}
 		renderEntry(w, ent.Title, ent.Body)
 	}
-	fmt.Fprintln(w, htmlFooter)
+	fmt.Fprint(w, htmlFooter)
 }
 
 // To human readable line
