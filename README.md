@@ -4,7 +4,7 @@ Apple Dictionary Parser is a command line tool and a library to parse and analyz
 
 Currently only "New Oxford American Dictionary" is supported.
 
-# Install
+# Installation
 
 ```
 go install github.com/DQNEO/apple-dictionary-parser@latest
@@ -28,21 +28,22 @@ The format of the dump file is TSV (tab separated values),  each line representi
 
 If you are just interested in the raw contents of the dictionary and want to process the data on your own, this will be all you want.
 
-## Export dictionary contents in text
+## Export dictionary contents into a text file
 ```
 apple-dictionary-parser text /tmp/all.txt
 ```
 
-## Export dictionary contents in HTML
+## Export dictionary contents into a HTML file
 ```
 apple-dictionary-parser html  /tmp/all.html
 ```
 
-## Export dictionary contents in alphabetically grouped HTML files
+## Export dictionary contents into alphabetically separated HTML files
 ```
 apple-dictionary-parser htmlsplit /tmp/
 ```
 
+This generates a.html, b.html, ..., z.html files in a given directory.
 
 ## Analyze etymology data
 
@@ -52,5 +53,8 @@ apple-dictionary-parser etym /tmp/
 
 This analyzes etymology graph and make outputs in various formats (yaml, html)
 
-# AUTHOR
+# License
+MIT
+
+# Author
 @DQNEO
