@@ -19,6 +19,11 @@ var flagDictFilePath = flag.String("dict-file", "", "dictionary file path")
 
 const dictBaseDir = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
 
+const version = "v0.0.2"
+
+func doVersion() {
+	fmt.Println("apple-dictionary-parser version " + version)
+}
 func doFind() {
 	dictDir, dictFilePath, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
 	if err != nil {
@@ -156,6 +161,8 @@ func main() {
 	}
 	cmd, args := args[0], args[1:]
 	switch cmd {
+	case "version":
+		doVersion()
 	case "find":
 		doFind()
 	case "dump":
