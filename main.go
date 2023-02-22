@@ -14,12 +14,12 @@ import (
 	"strings"
 )
 
+const version = "v0.0.5"
+
 var flagCacheFilePath = flag.String("cache-file", cache.DEFAULT_PATH, "cache file path")
 var flagDictFilePath = flag.String("dict-file", "", "dictionary file path")
 
 const dictBaseDir = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
-
-const version = "v0.0.3"
 
 func doVersion() {
 	fmt.Println("apple-dictionary-parser version " + version)
@@ -142,6 +142,18 @@ func doText(args []string) {
 	renderText(oFile, entries, selectWords)
 }
 
+func doPhonetics(args []string) {
+	flag := flag.NewFlagSet("debug", flag.ExitOnError)
+	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
+	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	flag.Parse(args)
+
+	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	//parser.EtymDebugWriter = os.Stderr
+	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	renderPhonetics(entries, selectWords)
+}
+
 func doDebug(args []string) {
 	flag := flag.NewFlagSet("debug", flag.ExitOnError)
 	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
@@ -149,7 +161,7 @@ func doDebug(args []string) {
 	flag.Parse(args)
 
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-	parser.DebugWriter = os.Stderr
+	//parser.EtymDebugWriter = os.Stderr
 	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
 	renderForDebug(entries, selectWords)
 }
@@ -178,6 +190,8 @@ func main() {
 		doText(args)
 	case "debug":
 		doDebug(args)
+	case "phonetics":
+		doPhonetics(args)
 	default:
 		panic("Invalid mode")
 	}
@@ -478,42 +492,23 @@ func collectEtymology(entries []*raw.Entry, selectWords SelectWords) ([]*BackEty
 	return backEtymLinks, forwardEtymMap
 }
 
-func renderForDebug(entries []*raw.Entry, selectWords SelectWords) {
-	var ffMap = make(map[string][]string, len(entries))
-	var ffRevMap = make(map[string][]string, len(entries))
+func renderPhonetics(entries []*raw.Entry, selectWords SelectWords) {
 	for _, ent := range entries {
 		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
 			continue
 		}
 		e := parser.ParseEntry(ent.Title, ent.Body)
-		ffMap[ent.Title] = e.FFWords
-		for _, ff := range e.FFWords {
-			ffRevMap[ff] = append(ffRevMap[ff], ent.Title)
+		fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
+	}
+}
+
+func renderForDebug(entries []*raw.Entry, selectWords SelectWords) {
+	for _, ent := range entries {
+		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
+			continue
 		}
-	}
-	// Sort
-	var ffMapKeys []string
-	for k, _ := range ffMap {
-		ffMapKeys = append(ffMapKeys, k)
-	}
-	sort.Strings(ffMapKeys)
-
-	var ffRevMapKeys []string
-	for k, _ := range ffRevMap {
-		ffRevMapKeys = append(ffRevMapKeys, k)
-	}
-
-	sort.Strings(ffRevMapKeys)
-
-	fmt.Printf("--- FF Map----\n")
-	for _, k := range ffMapKeys {
-		v := ffMap[k]
-		fmt.Printf("[%s] %s\n", k, strings.Join(v, ","))
-	}
-	fmt.Printf("--- FF Rev Map----\n")
-	for _, k := range ffRevMapKeys {
-		v := ffRevMap[k]
-		fmt.Printf("[%s] %s\n", k, strings.Join(v, ","))
+		e := parser.ParseEntry(ent.Title, ent.Body)
+		fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
 	}
 }
 

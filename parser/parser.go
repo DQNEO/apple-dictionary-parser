@@ -8,15 +8,16 @@ import (
 )
 
 type Entry struct {
-	Title string
-	Syll  string
-	IPA   string
-	SG    string
-	Phr   string
-	Phv   string
-	Drv   string
-	Etym  Etymology
-	Note  string
+	Title   string
+	Syll    string
+	NumSyll int
+	IPA     string
+	SG      string
+	Phr     string
+	Phv     string
+	Drv     string
+	Etym    Etymology
+	Note    string
 
 	FFWords []string
 }
@@ -66,13 +67,13 @@ func parseTopLevelElements(title string, body []byte) (*etree.Element, *etree.El
 	return eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote
 }
 
-var DebugWriter io.Writer = io.Discard
+var EtymDebugWriter io.Writer = io.Discard
 
 func ParseEntry(title string, body []byte) *Entry {
 	eHG, eSG, ePhrases, ePhVerbs, eDerivatives, eEtym, eNote := parseTopLevelElements(title, body)
 	hg := parseHG(title, eHG)
 	etym, ffwords := parseEtym(title, eEtym)
-	//hgDump, err := yaml.Marshal(hg)
+
 	et := &Entry{
 		Title:   title,
 		Syll:    hg.SYL_TXT,
@@ -85,6 +86,9 @@ func ParseEntry(title string, body []byte) *Entry {
 		Note:    S(eNote),
 		FFWords: ffwords,
 	}
+
+	et.NumSyll = strings.Count(et.Syll, "·") + 1
+
 	return et
 }
 
@@ -128,7 +132,7 @@ func parseHG(title string, eHG *etree.Element) *HG {
 						pronunciation = append(pronunciation, elm.Text())
 					}
 				} // else , no IPA
-				//fmt.Fprintf(DebugWriter, "prx children=%02d, title=%s%c", len(elm.Child), title, 10)
+				//fmt.Fprintf(EtymDebugWriter, "prx children=%02d, title=%s%c", len(elm.Child), title, 10)
 				hg.PRX = strings.Join(pronunciation, ",")
 			case "pr":
 				hg.PR = dumpElm(elm)
@@ -166,7 +170,7 @@ func collectText(indentLevel int, debugWriter io.Writer, elm *etree.Element) str
 		switch e := c.(type) {
 		case *etree.Element:
 			class := e.SelectAttrValue("class", "")
-			fmt.Fprintf(DebugWriter, `- <%s> Class="%s", ChildLen=%d, Text()="%s"`+"\n", e.Tag, class, len(e.Child), e.Text())
+			fmt.Fprintf(EtymDebugWriter, `- <%s> Class="%s", ChildLen=%d, Text()="%s"`+"\n", e.Tag, class, len(e.Child), e.Text())
 			var s string
 			s = collectText(indentLevel+4, debugWriter, e)
 			r += s
@@ -190,19 +194,19 @@ func parseEtym(title string, e *etree.Element) (Etymology, []string) {
 	}
 	assert(len(e.Child) == 2, "etym children should be 2")
 	etym := e.Child[1].(*etree.Element)
-	fmt.Fprintf(DebugWriter, "[%s] ---- childlen=%d\n", title, len(etym.Child))
+	fmt.Fprintf(EtymDebugWriter, "[%s] ---- childlen=%d\n", title, len(etym.Child))
 	for i, elem := range etym.Child {
-		//fmt.Fprintf(DebugWriter, "elem[%d] typ=%T, Index=%d\n", i, elem, elem.Index())
-		fmt.Fprintf(DebugWriter, "  - [%02d] ", i)
+		//fmt.Fprintf(EtymDebugWriter, "elem[%d] typ=%T, Index=%d\n", i, elem, elem.Index())
+		fmt.Fprintf(EtymDebugWriter, "  - [%02d] ", i)
 		switch e := elem.(type) {
 		case *etree.Element:
 			class := e.SelectAttr("class").Value
 			if class == "gp tg_etym" && e.Text() == "." {
 				// End of Etymology block ?
-				fmt.Fprintf(DebugWriter, ".\n")
+				fmt.Fprintf(EtymDebugWriter, ".\n")
 				continue
 			}
-			fmt.Fprintf(DebugWriter, `<%s> Class="%s", ChildLen=%d, Text()="%s"`+"\n", e.Tag, class, len(e.Child), e.Text())
+			fmt.Fprintf(EtymDebugWriter, `<%s> Class="%s", ChildLen=%d, Text()="%s"`+"\n", e.Tag, class, len(e.Child), e.Text())
 			if len(e.Child) == 0 {
 				panic("Unexpected structure")
 			}
@@ -215,10 +219,10 @@ func parseEtym(title string, e *etree.Element) (Etymology, []string) {
 				} else {
 					s = strings.TrimPrefix(s, "'")
 					ffwords = append(ffwords, s)
-					fmt.Fprintf(DebugWriter, "    <ff>%s</ff>\n", s)
+					fmt.Fprintf(EtymDebugWriter, "    <ff>%s</ff>\n", s)
 				}
 			default:
-				s = collectText(4, DebugWriter, e)
+				s = collectText(4, EtymDebugWriter, e)
 			}
 
 			ees = append(ees, EtymChunk(s))
@@ -226,7 +230,7 @@ func parseEtym(title string, e *etree.Element) (Etymology, []string) {
 			if e.IsWhitespace() {
 				continue
 			}
-			fmt.Fprintf(DebugWriter, "C\"%s\"\n", e.Data)
+			fmt.Fprintf(EtymDebugWriter, "C\"%s\"\n", e.Data)
 			ee := EtymChunk(e.Data)
 			ees = append(ees, ee)
 		default:

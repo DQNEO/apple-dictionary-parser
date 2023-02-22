@@ -53,6 +53,12 @@ apple-dictionary-parser etym /tmp/
 
 This analyzes etymology graph and make outputs in various formats (yaml, html)
 
+## Show phonetics information
+
+```
+apple-dictionary-parser phonetics
+```
+
 # License
 MIT
 

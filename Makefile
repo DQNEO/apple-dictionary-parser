@@ -7,7 +7,7 @@ all: $(OUT_DIR)/groups/a.html $(OUT_DIR)/noad.sample1.html $(OUT_DIR)/noad.sampl
 $(PROG): *.go cache/* extracter/*/* finder/* parser/* go.mod customize.css
 	go build
 
-$(CACHE): $(PROG)
+$(CACHE): extracter/*/*  finder/* cache/*
 	 $(PROG) dump
 	mkdir -p $(OUT_DIR)
 
@@ -26,6 +26,10 @@ $(OUT_DIR)/groups/a.html: $(CACHE) $(PROG) groups_index.html
 	$(PROG) htmlsplit $(OUT_DIR)/groups
 
 
+.PHONY: phonetics
+phonetics: $(CACHE) $(PROG)
+	$(PROG)  phonetics --words=happiness,joy,felicity,pleasure,apple,mango,banana,fish
+
 .PHONY: etym
 etym: $(CACHE) $(PROG)
 	$(PROG) etym $(OUT_DIR)
@@ -34,5 +38,5 @@ clean:
 	rm -fr $(CACHE) $(PROG) $(OUT_DIR)
 
 .PHONY: debug
-debug: $(CACHE) adp
-	$(PROG) debug --words-file=../lexicon/passtan1/data/2100plus.txt > $(OUT_DIR)/debug.txt
+debug: $(CACHE) $(PROG)
+	$(PROG) debug --words=happiness,joy,felicity,pleasure,apple,mango,banana,fish
