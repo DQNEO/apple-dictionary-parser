@@ -10,6 +10,7 @@ import (
 	"github.com/DQNEO/apple-dictionary-parser/parser"
 	"io"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -146,6 +147,7 @@ func doPhonetics(args []string) {
 	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
 	var flagIPA = flag.String("ipa", "", "filter by IPA")
+	var flagIPARegex = flag.String("ipa-regex", "", "filter by IPA in regular expression")
 	var flagMin = flag.Int("min-syl", 0, "min number of syllables")
 	var flagMax = flag.Int("max-syl", 1000, "max number of syllables")
 	flag.Parse(args)
@@ -153,8 +155,14 @@ func doPhonetics(args []string) {
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 	//parser.EtymDebugWriter = os.Stderr
 	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+
+	var ipaRegex *regexp.Regexp
+	if *flagIPARegex != "" {
+		ipaRegex = regexp.MustCompile(*flagIPARegex)
+	}
 	opt := &PhoneticsSelector{
 		IPA:          *flagIPA,
+		IPARegex:     ipaRegex,
 		MaxSyllables: *flagMax,
 		MinSyllables: *flagMin,
 	}
@@ -498,12 +506,24 @@ func collectEtymology(entries []*raw.Entry, selectWords SelectWords) ([]*BackEty
 
 type PhoneticsSelector struct {
 	IPA          string
+	IPARegex     *regexp.Regexp
 	MaxSyllables int // default 1000
 	MinSyllables int // default 1
 }
 
 func (psel *PhoneticsSelector) Match(e *parser.Entry) bool {
-	return strings.Contains(e.IPA, psel.IPA) && (psel.MinSyllables <= e.NumSyll && e.NumSyll <= psel.MaxSyllables)
+	// check syllables number first
+	if !(psel.MinSyllables <= e.NumSyll && e.NumSyll <= psel.MaxSyllables) {
+		return false
+	}
+
+	if psel.IPA != "" {
+		return strings.Contains(e.IPA, psel.IPA)
+	}
+	if psel.IPARegex != nil {
+		return psel.IPARegex.MatchString(e.IPA)
+	}
+	return true
 }
 
 func renderPhonetics(entries []*raw.Entry, selectWords SelectWords, psel *PhoneticsSelector) {
