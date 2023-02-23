@@ -61,6 +61,61 @@ func doDump() {
 	fmt.Printf("Dictonary raw data is successfully saved to: %s\n", *flagCacheFilePath)
 }
 
+func doIPA(args []string) {
+	flag := flag.NewFlagSet("ipa", flag.ExitOnError)
+	flag.Parse(args)
+
+	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	type occurrence struct {
+		cnt   int
+		words []string
+	}
+	var ipaChars = make(map[int32]*occurrence, 100)
+	for _, ent := range entries {
+		et := parser.ParseEntry(ent.Title, ent.Body)
+		//fmt.Fprintf(os.Stdout, "%s: ", ent.Title)
+
+		for _, char := range et.IPA {
+			switch char {
+			case 'ˈ', 'ˌ': // possibly stress
+				continue
+			case '(', ')':
+				continue
+			case ',', ';', ' ': // delimiter between multiple candidates
+				continue
+			case '-': // prefix
+				continue
+			case '%': // Dictionary's bug ;)
+				continue
+			case '[', ']', ':', 'ō', 'õ', 'ã', 0x303: // foreign words
+				continue
+			case 0x35c, 0x329: // irregular character that is ignorable
+				continue
+			case 0x2d0: // "ː" long sign
+				fallthrough
+			default:
+				if oc, ok := ipaChars[char]; ok {
+					oc.cnt++
+					oc.words = append(oc.words, et.Title+":"+et.IPA)
+				} else {
+					ipaChars[char] = &occurrence{}
+				}
+				//ipaChars[char]++
+				//fmt.Fprintf(os.Stdout, "%c ", char)
+			}
+		}
+		//fmt.Fprint(os.Stdout, "\n")
+	}
+
+	for k, oc := range ipaChars {
+		if oc.cnt < 100 {
+			// Foreign words
+			continue
+		}
+		fmt.Printf("%03x %c\n", k, k)
+	}
+}
+
 func doEtym(args []string) {
 	flag := flag.NewFlagSet("debug", flag.ExitOnError)
 	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
@@ -207,6 +262,8 @@ func main() {
 		doDebug(args)
 	case "phonetics":
 		doPhonetics(args)
+	case "ipa":
+		doIPA(args)
 	default:
 		panic("Invalid mode")
 	}
