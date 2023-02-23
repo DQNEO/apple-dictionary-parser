@@ -198,8 +198,8 @@ func main() {
 
 type SelectWords map[string]bool
 
-func (mp SelectWords) HasKey(w string) bool {
-	return mp[strings.ToLower(w)]
+func (mp SelectWords) EmptyOrMatch(w string) bool {
+	return len(mp) == 0 || mp[strings.ToLower(w)]
 }
 
 func getSelectWordsMap(csv string, file string) SelectWords {
@@ -258,15 +258,14 @@ func renderSplitHTML(defaultCssPath string, outDir string, entries []*raw.Entry,
 		f.Write([]byte(GenHtmlHeader(htmlTitle, true, defaultCssPath)))
 	}
 	for _, ent := range entries {
-		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
-			continue
+		if selectWords.EmptyOrMatch(ent.Title) {
+			t := ent.Title[0]
+			f, found := files[t]
+			if !found {
+				f = files[0]
+			}
+			renderEntry(f, ent.Title, ent.Body)
 		}
-		t := ent.Title[0]
-		f, found := files[t]
-		if !found {
-			f = files[0]
-		}
-		renderEntry(f, ent.Title, ent.Body)
 	}
 }
 
@@ -274,10 +273,9 @@ func renderSingleHTML(cssPath string, w io.Writer, entries []*raw.Entry, selectW
 	htmlTitle := "NOAD HTML as a single file"
 	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true, cssPath))
 	for _, ent := range entries {
-		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
-			continue
+		if selectWords.EmptyOrMatch(ent.Title) {
+			renderEntry(w, ent.Title, ent.Body)
 		}
-		renderEntry(w, ent.Title, ent.Body)
 	}
 	fmt.Fprint(w, htmlFooter)
 }
@@ -471,20 +469,19 @@ func collectEtymology(entries []*raw.Entry, selectWords SelectWords) ([]*BackEty
 	var allFF []string
 	var backEtymLinks []*BackEtymLink
 	for _, ent := range entries {
-		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
-			continue
-		}
-		e := parser.ParseEntry(ent.Title, ent.Body)
-		if len(e.Etym) == 0 {
-			continue
-		}
-		backEtymLinks = append(backEtymLinks, &BackEtymLink{
-			EngWord:     ent.Title,
-			OriginWords: e.FFWords,
-		})
-		for _, ff := range e.FFWords {
-			forwardEtymMap[ff] = append(forwardEtymMap[ff], ent.Title)
-			allFF = append(allFF, ff)
+		if selectWords.EmptyOrMatch(ent.Title) {
+			e := parser.ParseEntry(ent.Title, ent.Body)
+			if len(e.Etym) == 0 {
+				continue
+			}
+			backEtymLinks = append(backEtymLinks, &BackEtymLink{
+				EngWord:     ent.Title,
+				OriginWords: e.FFWords,
+			})
+			for _, ff := range e.FFWords {
+				forwardEtymMap[ff] = append(forwardEtymMap[ff], ent.Title)
+				allFF = append(allFF, ff)
+			}
 		}
 	}
 
@@ -493,32 +490,29 @@ func collectEtymology(entries []*raw.Entry, selectWords SelectWords) ([]*BackEty
 
 func renderPhonetics(entries []*raw.Entry, selectWords SelectWords) {
 	for _, ent := range entries {
-		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
-			continue
+		if selectWords.EmptyOrMatch(ent.Title) {
+			e := parser.ParseEntry(ent.Title, ent.Body)
+			fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
 		}
-		e := parser.ParseEntry(ent.Title, ent.Body)
-		fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
 	}
 }
 
 func renderForDebug(entries []*raw.Entry, selectWords SelectWords) {
 	for _, ent := range entries {
-		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
-			continue
+		if selectWords.EmptyOrMatch(ent.Title) {
+			e := parser.ParseEntry(ent.Title, ent.Body)
+			fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
 		}
-		e := parser.ParseEntry(ent.Title, ent.Body)
-		fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
 	}
 }
 
 func renderText(w io.Writer, entries []*raw.Entry, selectWords SelectWords) {
 	for _, ent := range entries {
-		if len(selectWords) > 0 && !selectWords.HasKey(ent.Title) {
-			continue
+		if selectWords.EmptyOrMatch(ent.Title) {
+			et := parser.ParseEntry(ent.Title, ent.Body)
+			s := ToOneline(et)
+			fmt.Fprintln(w, s)
 		}
-		et := parser.ParseEntry(ent.Title, ent.Body)
-		s := ToOneline(et)
-		fmt.Fprintln(w, s)
 	}
 }
 
