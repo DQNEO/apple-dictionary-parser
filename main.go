@@ -61,8 +61,8 @@ func doDump() {
 	fmt.Printf("Dictonary raw data is successfully saved to: %s\n", *flagCacheFilePath)
 }
 
-func doIPA(args []string) {
-	flag := flag.NewFlagSet("ipa", flag.ExitOnError)
+func doCollectIPA(args []string) {
+	flag := flag.NewFlagSet("collect-ipa", flag.ExitOnError)
 	flag.Parse(args)
 
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
@@ -91,14 +91,12 @@ func doIPA(args []string) {
 				continue
 			case 0x35c, 0x329: // irregular character that is ignorable
 				continue
-			case 0x2d0: // "ː" long sign
-				fallthrough
 			default:
 				if oc, ok := ipaChars[char]; ok {
 					oc.cnt++
 					oc.words = append(oc.words, et.Title+":"+et.IPA)
 				} else {
-					ipaChars[char] = &occurrence{}
+					ipaChars[char] = &occurrence{cnt: 1}
 				}
 				//ipaChars[char]++
 				//fmt.Fprintf(os.Stdout, "%c ", char)
@@ -108,11 +106,10 @@ func doIPA(args []string) {
 	}
 
 	for k, oc := range ipaChars {
-		if oc.cnt < 100 {
-			// Foreign words
+		if oc.cnt == 1 {
 			continue
 		}
-		fmt.Printf("%03x %c\n", k, k)
+		fmt.Printf("count=%07d: %03x %c \n", oc.cnt, k, k)
 	}
 }
 
@@ -262,8 +259,8 @@ func main() {
 		doDebug(args)
 	case "phonetics":
 		doPhonetics(args)
-	case "ipa":
-		doIPA(args)
+	case "collect-ipa":
+		doCollectIPA(args)
 	default:
 		panic("Invalid mode")
 	}
