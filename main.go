@@ -145,12 +145,20 @@ func doPhonetics(args []string) {
 	flag := flag.NewFlagSet("phonetics", flag.ExitOnError)
 	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	var flagIPA = flag.String("ipa", "", "filter by IPA")
+	var flagMin = flag.Int("min-syl", 0, "min number of syllables")
+	var flagMax = flag.Int("max-syl", 1000, "max number of syllables")
 	flag.Parse(args)
 
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 	//parser.EtymDebugWriter = os.Stderr
 	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-	renderPhonetics(entries, selectWords)
+	opt := &PhoneticsSelector{
+		IPA:          *flagIPA,
+		MaxSyllables: *flagMax,
+		MinSyllables: *flagMin,
+	}
+	renderPhonetics(entries, selectWords, opt)
 }
 
 func doDebug(args []string) {
@@ -488,11 +496,23 @@ func collectEtymology(entries []*raw.Entry, selectWords SelectWords) ([]*BackEty
 	return backEtymLinks, forwardEtymMap
 }
 
-func renderPhonetics(entries []*raw.Entry, selectWords SelectWords) {
+type PhoneticsSelector struct {
+	IPA          string
+	MaxSyllables int // default 1000
+	MinSyllables int // default 1
+}
+
+func (psel *PhoneticsSelector) Match(e *parser.Entry) bool {
+	return strings.Contains(e.IPA, psel.IPA) && (psel.MinSyllables <= e.NumSyll && e.NumSyll <= psel.MaxSyllables)
+}
+
+func renderPhonetics(entries []*raw.Entry, selectWords SelectWords, psel *PhoneticsSelector) {
 	for _, ent := range entries {
 		if selectWords.EmptyOrMatch(ent.Title) {
 			e := parser.ParseEntry(ent.Title, ent.Body)
-			fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
+			if psel.Match(e) {
+				fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
+			}
 		}
 	}
 }
