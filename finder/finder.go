@@ -7,7 +7,10 @@ import (
 	"path/filepath"
 )
 
-func FindDictFile(baseDir string) (string, string, string, error) {
+var BaseDir = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
+
+func FindDictFile() (string, string, string, error) {
+	baseDir := BaseDir
 	var foundDicDir string
 	err := filepath.Walk(baseDir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {

@@ -19,13 +19,12 @@ const version = "v0.0.5"
 var flagCacheFilePath = flag.String("cache-file", cache.DEFAULT_PATH, "cache file path")
 var flagDictFilePath = flag.String("dict-file", "", "dictionary file path")
 
-const dictBaseDir = "/System/Library/AssetsV2/com_apple_MobileAsset_DictionaryServices_dictionaryOSX"
-
 func doVersion() {
 	fmt.Println("apple-dictionary-parser version " + version)
 }
+
 func doFind() {
-	dictDir, dictFilePath, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
+	dictDir, dictFilePath, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +38,7 @@ func doDump() {
 	var dictFilePath string
 	if *flagDictFilePath == "" {
 		fmt.Printf("Searching Dictionary file ...\n")
-		_, bodyFilePath, _, err := finder.FindDictFile(dictBaseDir)
+		_, bodyFilePath, _, err := finder.FindDictFile()
 		if err != nil {
 			panic(err)
 		}
@@ -91,7 +90,7 @@ func doHTML(args []string) {
 	}
 
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-	_, _, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
+	_, _, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +114,7 @@ func doHTMLSplit(args []string) {
 	}
 
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-	_, _, defaultCssPath, err := finder.FindDictFile(dictBaseDir)
+	_, _, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
 		panic(err)
 	}
