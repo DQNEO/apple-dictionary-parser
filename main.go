@@ -142,7 +142,7 @@ func doText(args []string) {
 }
 
 func doPhonetics(args []string) {
-	flag := flag.NewFlagSet("debug", flag.ExitOnError)
+	flag := flag.NewFlagSet("phonetics", flag.ExitOnError)
 	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
 	flag.Parse(args)
