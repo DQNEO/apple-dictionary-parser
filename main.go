@@ -1,13 +1,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/DQNEO/apple-dictionary-parser/cache"
 	"github.com/DQNEO/apple-dictionary-parser/extracter"
 	"github.com/DQNEO/apple-dictionary-parser/extracter/raw"
 	"github.com/DQNEO/apple-dictionary-parser/finder"
 	"github.com/DQNEO/apple-dictionary-parser/parser"
+	"github.com/urfave/cli/v2"
 	"io"
 	"os"
 	"regexp"
@@ -17,14 +17,12 @@ import (
 
 const version = "v0.0.5"
 
-var flagCacheFilePath = flag.String("cache-file", cache.DEFAULT_PATH, "cache file path")
-var flagDictFilePath = flag.String("dict-file", "", "dictionary file path")
-
-func doVersion() {
+func doVersion(cCtx *cli.Context) error {
 	fmt.Println("apple-dictionary-parser version " + version)
+	return nil
 }
 
-func doFind() {
+func doFind(cCtx *cli.Context) error {
 	dictDir, dictFilePath, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
 		panic(err)
@@ -33,11 +31,13 @@ func doFind() {
 	fmt.Printf("Directory:\n  '%s'\n", dictDir)
 	fmt.Printf("Body file:\n  '%s'\n", dictFilePath)
 	fmt.Printf("CSS file:\n  '%s'\n", defaultCssPath)
+	return nil
 }
 
-func doDump() {
+func doDump(cCtx *cli.Context) error {
 	var dictFilePath string
-	if *flagDictFilePath == "" {
+	flagDictFilePath := cCtx.String("dict-file")
+	if flagDictFilePath == "" {
 		fmt.Printf("Searching Dictionary file ...\n")
 		_, bodyFilePath, _, err := finder.FindDictFile()
 		if err != nil {
@@ -49,19 +49,22 @@ func doDump() {
 		fmt.Printf("Dictionary file is bodyFilePath at '%s'\n", bodyFilePath)
 		dictFilePath = bodyFilePath
 	} else {
-		dictFilePath = *flagDictFilePath
+		dictFilePath = flagDictFilePath
 	}
 	fmt.Printf("Extracting the dictionary file ...\n")
 	entries := extracter.ParseBinaryFile(dictFilePath)
-	oFile, err := os.Create(*flagCacheFilePath)
+	flagCacheFilePath := cCtx.String("cache-file")
+	oFile, err := os.Create(flagCacheFilePath)
 	if err != nil {
 		panic(err)
+		return err
 	}
 	cache.SaveEntries(oFile, entries)
-	fmt.Printf("Dictonary raw data is successfully saved to: %s\n", *flagCacheFilePath)
+	fmt.Printf("Dictonary raw data is successfully saved to: %s\n", flagCacheFilePath)
+	return nil
 }
 
-func doShowIPA(args []string) {
+func doShowIPA(cCtx *cli.Context) error {
 	var msg = `
 -- Vowels --
 Short: ɪ ɛ æ ɑ ə ʊ
@@ -77,13 +80,12 @@ m ŋ n
 j w  
 `
 	fmt.Print(msg)
+	return nil
 }
 
-func doCollectIPA(args []string) {
-	flag := flag.NewFlagSet("collect-ipa", flag.ExitOnError)
-	flag.Parse(args)
-
-	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+func doCollectIPA(cCtx *cli.Context) error {
+	flagCacheFilePath := cCtx.String("cache-file")
+	entries := cache.LoadFromCacheFile(flagCacheFilePath)
 	type occurrence struct {
 		cnt   int
 		words []string
@@ -129,25 +131,27 @@ func doCollectIPA(args []string) {
 		}
 		fmt.Printf("count=%07d: %03x %c \n", oc.cnt, k, k)
 	}
+	return nil
 }
 
-func doEtym(args []string) {
-	flag := flag.NewFlagSet("debug", flag.ExitOnError)
-	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-	flag.Parse(args)
-	outDir := flag.Arg(0)
+func doEtym(cCtx *cli.Context) error {
+	var flagWords = cCtx.String("words")
+	var flagWordsFile = cCtx.String("words-file")
+	flagCacheFilePath := cCtx.String("cache-file")
+
+	outDir := cCtx.Args().First()
 	if outDir == "" {
 		panic("Please specify an output directory")
 	}
 
-	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	entries := cache.LoadFromCacheFile(flagCacheFilePath)
+	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
 	slice, mp := collectEtymology(entries, selectWords)
 	//println(len(slice), len(mp))
 	formatEtymologyToYAML(outDir, slice, mp)
 	formatEtymologyToHTML(outDir, slice, mp)
 	formatEtymologyToJSON(outDir, slice, mp)
+	return nil
 }
 
 func createOutFile(path string) (*os.File, error) {
@@ -158,137 +162,281 @@ func createOutFile(path string) (*os.File, error) {
 	}
 }
 
-func doHTML(args []string) {
-	flag := flag.NewFlagSet("debug", flag.ExitOnError)
-	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-	var flagOutFile = flag.String("out-file", "", "output file")
-	flag.Parse(args)
-	oFile, err := createOutFile(*flagOutFile)
+func doHTML(cCtx *cli.Context) error {
+	flagCacheFilePath := cCtx.String("cache-file")
+	flagWordsFile := cCtx.String("words-file")
+	flagWords := cCtx.String("words")
+	flagOutFile := cCtx.String("out-file")
+
+	oFile, err := createOutFile(flagOutFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	entries := cache.LoadFromCacheFile(flagCacheFilePath)
 	_, _, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
-		panic(err)
+		return err
 	}
-	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
 	renderSingleHTML(defaultCssPath, oFile, entries, selectWords)
+	return nil
 }
 
-func doHTMLSplit(args []string) {
-	flag := flag.NewFlagSet("debug", flag.ExitOnError)
-	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-	flag.Parse(args)
-	outDir := flag.Arg(0)
-	if outDir == "" {
+func doHTMLSplit(cCtx *cli.Context) error {
+	flagCacheFilePath := cCtx.String("cache-file")
+	flagWordsFile := cCtx.String("words-file")
+	flagWords := cCtx.String("words")
+	flagOutFile := cCtx.String("out-dir")
+
+	if flagOutFile == "" {
 		panic("Please specify an output directory")
 	}
 
-	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	entries := cache.LoadFromCacheFile(flagCacheFilePath)
 	_, _, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
 		panic(err)
 	}
-	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-	renderSplitHTML(defaultCssPath, outDir, entries, selectWords)
+	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
+	renderSplitHTML(defaultCssPath, flagOutFile, entries, selectWords)
+	return nil
 }
 
-func doText(args []string) {
-	flag := flag.NewFlagSet("debug", flag.ExitOnError)
-	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-	var flagOutFile = flag.String("out-file", "", "output file")
-	flag.Parse(args)
-	oFile, err := createOutFile(*flagOutFile)
+func doText(cCtx *cli.Context) error {
+	flagCacheFilePath := cCtx.String("cache-file")
+	flagWordsFile := cCtx.String("words-file")
+	flagWords := cCtx.String("words")
+	flagOutFile := cCtx.String("out-file")
+
+	oFile, err := createOutFile(flagOutFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	entries := cache.LoadFromCacheFile(flagCacheFilePath)
+	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
 
 	renderText(oFile, entries, selectWords)
+	return nil
 }
 
-func doPhonetics(args []string) {
-	flag := flag.NewFlagSet("phonetics", flag.ExitOnError)
-	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-	var flagIPA = flag.String("ipa", "", "filter by IPA")
-	var flagIPARegex = flag.String("ipa-regex", "", "filter by IPA in regular expression")
-	var flagMin = flag.Int("min-syl", 0, "min number of syllables")
-	var flagMax = flag.Int("max-syl", 1000, "max number of syllables")
-	var flagOutFile = flag.String("out-file", "", "output file")
-	flag.Parse(args)
-	oFile, err := createOutFile(*flagOutFile)
+func doPhonetics(cCtx *cli.Context) error {
+	flagCacheFilePath := cCtx.String("cache-file")
+	var flagWords = cCtx.String("words")
+	var flagWordsFile = cCtx.String("words-file")
+	var flagIPA = cCtx.String("ipa")
+	var flagIPARegex = cCtx.String("ipa-regex")
+	var flagMin = cCtx.Int("min-syl")
+	var flagMax = cCtx.Int("max-syl")
+	var flagOutFile = cCtx.String("out-file")
+	oFile, err := createOutFile(flagOutFile)
 	if err != nil {
 		panic(err)
 	}
 
-	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
+	entries := cache.LoadFromCacheFile(flagCacheFilePath)
 	//parser.EtymDebugWriter = os.Stderr
-	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
 
 	var ipaRegex *regexp.Regexp
-	if *flagIPARegex != "" {
-		ipaRegex = regexp.MustCompile(*flagIPARegex)
+	if flagIPARegex != "" {
+		ipaRegex = regexp.MustCompile(flagIPARegex)
 	}
 	opt := &PhoneticsSelector{
-		IPA:          *flagIPA,
+		IPA:          flagIPA,
 		IPARegex:     ipaRegex,
-		MaxSyllables: *flagMax,
-		MinSyllables: *flagMin,
+		MaxSyllables: flagMax,
+		MinSyllables: flagMin,
 	}
 	renderPhonetics(oFile, entries, selectWords, opt)
+	return nil
 }
 
-func doDebug(args []string) {
-	flag := flag.NewFlagSet("debug", flag.ExitOnError)
-	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
-	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
-	flag.Parse(args)
+func doDebug(cCtx *cli.Context) error {
+	flagCacheFilePath := cCtx.String("cache-file")
+	flagWordsFile := cCtx.String("words-file")
+	flagWords := cCtx.String("words")
 
-	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
-	//parser.EtymDebugWriter = os.Stderr
-	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
+	entries := cache.LoadFromCacheFile(flagCacheFilePath)
+	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
+
 	renderForDebug(entries, selectWords)
+	return nil
 }
 
 func main() {
-	flag.Parse()
-	args := flag.Args()
-	if len(args) == 0 {
-		panic("Please specify a subcommand.")
-	}
-	cmd, args := args[0], args[1:]
-	switch cmd {
-	case "version":
-		doVersion()
-	case "find":
-		doFind()
-	case "dump":
-		doDump()
-	case "etym":
-		doEtym(args)
-	case "html":
-		doHTML(args)
-	case "htmlsplit":
-		doHTMLSplit(args)
-	case "text":
-		doText(args)
-	case "debug":
-		doDebug(args)
-	case "phonetics":
-		doPhonetics(args)
-	case "collect-ipa":
-		doCollectIPA(args)
-	case "show-ipa":
-		doShowIPA(args)
-	default:
-		panic("Invalid mode")
+	app := &cli.App{
+		Name:    "apple-dictionary-parser - a tool to parse and analyze MacOS's built-in dictionaries",
+		Version: version,
+		Usage:   "make an explosive entrance",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "cache-file",
+				Value: cache.DEFAULT_PATH,
+				Usage: "cache file path",
+			},
+			&cli.StringFlag{
+				Name:  "dict-file",
+				Usage: "dictionary file path",
+			},
+		},
+		Commands: []*cli.Command{
+			{
+				Name:   "version",
+				Usage:  "print the version",
+				Action: doVersion,
+			},
+			{
+				Name:   "find",
+				Usage:  "find a dictionary file",
+				Action: doFind,
+			},
+			{
+				Name:   "dump",
+				Usage:  "Dump dictionary raw data",
+				Action: doDump,
+			},
+			{
+				Name:  "text",
+				Usage: "Convert dictionary data into text format",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "words",
+						Usage: "limit words in csv",
+					},
+					&cli.StringFlag{
+						Name:      "words-file",
+						TakesFile: true,
+						Usage:     "limit words by the given file",
+					},
+					&cli.StringFlag{
+						Name:    "out-file",
+						Aliases: []string{"o"},
+						Usage:   "output file",
+					},
+				},
+				Action: doText,
+			},
+			{
+				Name:  "html",
+				Usage: "Convert dictionary data into html format",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "words",
+						Usage: "limit words in csv",
+					},
+					&cli.StringFlag{
+						Name:      "words-file",
+						TakesFile: true,
+						Usage:     "limit words by the given file",
+					},
+					&cli.StringFlag{
+						Name:    "out-file",
+						Aliases: []string{"o"},
+						Usage:   "output file",
+					},
+				},
+				Action: doHTML,
+			},
+			{
+				Name:  "html-split",
+				Usage: "Convert dictionary data into html format",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "words",
+						Usage: "limit words in csv",
+					},
+					&cli.StringFlag{
+						Name:      "words-file",
+						TakesFile: true,
+						Usage:     "limit words by the given file",
+					},
+					&cli.StringFlag{
+						Name:    "out-dir",
+						Aliases: []string{"o"},
+						Usage:   "output directory",
+					},
+				},
+				Action: doHTMLSplit,
+			},
+			{
+				Name:  "phonetics",
+				Usage: "Convert dictionary data into html format",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "words",
+						Usage: "limit words in csv",
+					},
+					&cli.StringFlag{
+						Name:      "words-file",
+						TakesFile: true,
+						Usage:     "limit words by the given file",
+					},
+					&cli.StringFlag{
+						Name:    "out-file",
+						Aliases: []string{"o"},
+						Usage:   "output file",
+					},
+					&cli.StringFlag{Name: "ipa", Usage: "filter by IPA"},
+					&cli.StringFlag{Name: "ipa-regex", Usage: "filter by IPA in regular expression"},
+					&cli.IntFlag{Name: "min-syl", Value: 0, Usage: "min number of syllables"},
+					&cli.IntFlag{Name: "max-syl", Value: 1000, Usage: "max number of syllables"},
+				},
+				Action: doPhonetics,
+			},
+			{
+				Name:  "debug",
+				Usage: "debug",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "words",
+						Usage: "limit words in csv",
+					},
+					&cli.StringFlag{
+						Name:      "words-file",
+						TakesFile: true,
+						Usage:     "limit words by the given file",
+					},
+					&cli.StringFlag{
+						Name:    "out-file",
+						Aliases: []string{"o"},
+						Usage:   "output file",
+					},
+				},
+				Action: doDebug,
+			},
+			{
+				Name:   "collect-ipa",
+				Usage:  "collect all IPA occurrences",
+				Action: doCollectIPA,
+			},
+			{
+				Name:   "show-ipa",
+				Usage:  "show all IPA letters",
+				Action: doShowIPA,
+			},
+			{
+				Name:   "etym",
+				Usage:  "Output Etymology info",
+				Action: doEtym,
+				Flags: []cli.Flag{&cli.StringFlag{
+					Name:  "words",
+					Usage: "limit words in csv",
+				},
+					&cli.StringFlag{
+						Name:      "words-file",
+						TakesFile: true,
+						Usage:     "limit words by the given file",
+					},
+					&cli.StringFlag{
+						Name:    "out-file",
+						Aliases: []string{"o"},
+						Usage:   "output file",
+					}},
+			},
+		}}
+	if err := app.Run(os.Args); err != nil {
+		panic(err)
 	}
 }
 
