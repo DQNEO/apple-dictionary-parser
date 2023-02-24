@@ -61,6 +61,20 @@ func doDump() {
 	fmt.Printf("Dictonary raw data is successfully saved to: %s\n", *flagCacheFilePath)
 }
 
+func doShowIPA(args []string) {
+	var msg = `
+-- vowels -- 
+ɪ e u æ o i ɑ a ʊ ɛ ɔ ə ː
+-- consonants / semi-vowels -- 
+p b f v k ɡ t d 
+s z θ ð ʃ ʒ 
+r l h  
+m ŋ n 
+j w  
+`
+	fmt.Print(msg)
+}
+
 func doCollectIPA(args []string) {
 	flag := flag.NewFlagSet("collect-ipa", flag.ExitOnError)
 	flag.Parse(args)
@@ -261,6 +275,8 @@ func main() {
 		doPhonetics(args)
 	case "collect-ipa":
 		doCollectIPA(args)
+	case "show-ipa":
+		doShowIPA(args)
 	default:
 		panic("Invalid mode")
 	}
