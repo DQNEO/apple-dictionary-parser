@@ -63,9 +63,13 @@ func doDump() {
 
 func doShowIPA(args []string) {
 	var msg = `
--- vowels -- 
-ɪ e u æ o i ɑ a ʊ ɛ ɔ ə ː
--- consonants / semi-vowels -- 
+-- Vowels --
+Short: ɪ ɛ æ ɑ ə ʊ
+Long: i ɔ ɑ u
+Diphthong: eɪ aɪ ɔɪ aʊ oʊ ju
+           ɪr ɛr ɑr ɔr ʊr
+
+-- Consonants / Semi-Vowels --
 p b f v k ɡ t d 
 s z θ ð ʃ ʒ 
 r l h  
