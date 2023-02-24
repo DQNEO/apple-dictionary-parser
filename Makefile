@@ -12,13 +12,13 @@ $(CACHE): extracter/*/*  finder/* cache/*
 	mkdir -p $(OUT_DIR)
 
 $(OUT_DIR)/noad.sample1.html: $(CACHE) $(PROG)
-	$(PROG) html --words=happiness,joy,felicity,pleasure $@
+	$(PROG) html --words=happiness,joy,felicity,pleasure --out-file $@
 
 $(OUT_DIR)/noad.sample2.html: $(CACHE) $(PROG) words-sample.txt
-	$(PROG) html --words-file=words-sample.txt $@
+	$(PROG) html --words-file=words-sample.txt --out-file $@
 
 $(OUT_DIR)/noad.txt: $(CACHE) $(PROG)
-	$(PROG) text $@
+	$(PROG) text --out-file $@
 
 $(OUT_DIR)/groups/a.html: $(CACHE) $(PROG) groups_index.html
 	mkdir -p $(OUT_DIR)/groups

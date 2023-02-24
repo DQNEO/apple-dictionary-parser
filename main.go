@@ -150,28 +150,31 @@ func doEtym(args []string) {
 	formatEtymologyToJSON(outDir, slice, mp)
 }
 
+func createOutFile(path string) (*os.File, error) {
+	if path == "" {
+		return os.Stdout, nil
+	} else {
+		return os.Create(path)
+	}
+}
+
 func doHTML(args []string) {
 	flag := flag.NewFlagSet("debug", flag.ExitOnError)
 	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	var flagOutFile = flag.String("out-file", "", "output file")
 	flag.Parse(args)
-	outFile := flag.Arg(0)
-	if outFile == "" {
-		panic("Please specify an output filename")
+	oFile, err := createOutFile(*flagOutFile)
+	if err != nil {
+		panic(err)
 	}
-
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 	_, _, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
 		panic(err)
 	}
 	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-	oFile, err := os.Create(outFile)
-	if err != nil {
-		panic(err)
-	}
 	renderSingleHTML(defaultCssPath, oFile, entries, selectWords)
-
 }
 
 func doHTMLSplit(args []string) {
@@ -197,18 +200,16 @@ func doText(args []string) {
 	flag := flag.NewFlagSet("debug", flag.ExitOnError)
 	var flagWords = flag.String("words", "", "limit words in csv. Only for HTML mode ")
 	var flagWordsFile = flag.String("words-file", "", "limit words by the given file. Only for HTML mode ")
+	var flagOutFile = flag.String("out-file", "", "output file")
 	flag.Parse(args)
-	outFile := flag.Arg(0)
-	if outFile == "" {
-		panic("Please specify an output filename")
+	oFile, err := createOutFile(*flagOutFile)
+	if err != nil {
+		panic(err)
 	}
 
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 	selectWords := getSelectWordsMap(*flagWords, *flagWordsFile)
-	oFile, err := os.Create(outFile)
-	if err != nil {
-		panic(err)
-	}
+
 	renderText(oFile, entries, selectWords)
 }
 
@@ -220,7 +221,12 @@ func doPhonetics(args []string) {
 	var flagIPARegex = flag.String("ipa-regex", "", "filter by IPA in regular expression")
 	var flagMin = flag.Int("min-syl", 0, "min number of syllables")
 	var flagMax = flag.Int("max-syl", 1000, "max number of syllables")
+	var flagOutFile = flag.String("out-file", "", "output file")
 	flag.Parse(args)
+	oFile, err := createOutFile(*flagOutFile)
+	if err != nil {
+		panic(err)
+	}
 
 	entries := cache.LoadFromCacheFile(*flagCacheFilePath)
 	//parser.EtymDebugWriter = os.Stderr
@@ -236,7 +242,7 @@ func doPhonetics(args []string) {
 		MaxSyllables: *flagMax,
 		MinSyllables: *flagMin,
 	}
-	renderPhonetics(entries, selectWords, opt)
+	renderPhonetics(oFile, entries, selectWords, opt)
 }
 
 func doDebug(args []string) {
@@ -600,12 +606,12 @@ func (psel *PhoneticsSelector) Match(e *parser.Entry) bool {
 	return true
 }
 
-func renderPhonetics(entries []*raw.Entry, selectWords SelectWords, psel *PhoneticsSelector) {
+func renderPhonetics(w io.Writer, entries []*raw.Entry, selectWords SelectWords, psel *PhoneticsSelector) {
 	for _, ent := range entries {
 		if selectWords.EmptyOrMatch(ent.Title) {
 			e := parser.ParseEntry(ent.Title, ent.Body)
 			if psel.Match(e) {
-				fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
+				fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
 			}
 		}
 	}
@@ -615,7 +621,7 @@ func renderForDebug(entries []*raw.Entry, selectWords SelectWords) {
 	for _, ent := range entries {
 		if selectWords.EmptyOrMatch(ent.Title) {
 			e := parser.ParseEntry(ent.Title, ent.Body)
-			fmt.Printf("%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
+			fmt.Fprintf(os.Stdout, "%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
 		}
 	}
 }
