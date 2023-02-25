@@ -135,17 +135,13 @@ func doCollectIPA(cCtx *cli.Context) error {
 }
 
 func doEtym(cCtx *cli.Context) error {
-	var flagWords = cCtx.String("words")
-	var flagWordsFile = cCtx.String("words-file")
-	flagCacheFilePath := cCtx.String("cache-file")
-
 	outDir := cCtx.Args().First()
 	if outDir == "" {
 		panic("Please specify an output directory")
 	}
 
-	entries := cache.LoadFromCacheFile(flagCacheFilePath)
-	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
+	entries := LoadFromCacheFile(cCtx)
+	selectWords := GetSelectWordsMap(cCtx)
 	slice, mp := collectEtymology(entries, selectWords)
 	//println(len(slice), len(mp))
 	formatEtymologyToYAML(outDir, slice, mp)
@@ -163,49 +159,39 @@ func createOutFile(path string) (*os.File, error) {
 }
 
 func doHTML(cCtx *cli.Context) error {
-	flagCacheFilePath := cCtx.String("cache-file")
-	flagWordsFile := cCtx.String("words-file")
-	flagWords := cCtx.String("words")
 	flagOutFile := cCtx.String("out-file")
 
 	oFile, err := createOutFile(flagOutFile)
 	if err != nil {
 		return err
 	}
-	entries := cache.LoadFromCacheFile(flagCacheFilePath)
+	entries := LoadFromCacheFile(cCtx)
 	_, _, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
 		return err
 	}
-	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
+	selectWords := GetSelectWordsMap(cCtx)
 	renderSingleHTML(defaultCssPath, oFile, entries, selectWords)
 	return nil
 }
 
 func doHTMLSplit(cCtx *cli.Context) error {
-	flagCacheFilePath := cCtx.String("cache-file")
-	flagWordsFile := cCtx.String("words-file")
-	flagWords := cCtx.String("words")
 	flagOutFile := cCtx.String("out-dir")
-
 	if flagOutFile == "" {
 		panic("Please specify an output directory")
 	}
 
-	entries := cache.LoadFromCacheFile(flagCacheFilePath)
+	entries := LoadFromCacheFile(cCtx)
 	_, _, defaultCssPath, err := finder.FindDictFile()
 	if err != nil {
 		panic(err)
 	}
-	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
+	selectWords := GetSelectWordsMap(cCtx)
 	renderSplitHTML(defaultCssPath, flagOutFile, entries, selectWords)
 	return nil
 }
 
 func doText(cCtx *cli.Context) error {
-	flagCacheFilePath := cCtx.String("cache-file")
-	flagWordsFile := cCtx.String("words-file")
-	flagWords := cCtx.String("words")
 	flagOutFile := cCtx.String("out-file")
 
 	oFile, err := createOutFile(flagOutFile)
@@ -213,17 +199,14 @@ func doText(cCtx *cli.Context) error {
 		return err
 	}
 
-	entries := cache.LoadFromCacheFile(flagCacheFilePath)
-	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
+	entries := LoadFromCacheFile(cCtx)
+	selectWords := GetSelectWordsMap(cCtx)
 
 	renderText(oFile, entries, selectWords)
 	return nil
 }
 
 func doPhonetics(cCtx *cli.Context) error {
-	flagCacheFilePath := cCtx.String("cache-file")
-	var flagWords = cCtx.String("words")
-	var flagWordsFile = cCtx.String("words-file")
 	var flagIPA = cCtx.String("ipa")
 	var flagIPARegex = cCtx.String("ipa-regex")
 	var flagMin = cCtx.Int("min-syl")
@@ -234,9 +217,9 @@ func doPhonetics(cCtx *cli.Context) error {
 		panic(err)
 	}
 
-	entries := cache.LoadFromCacheFile(flagCacheFilePath)
+	entries := LoadFromCacheFile(cCtx)
 	//parser.EtymDebugWriter = os.Stderr
-	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
+	selectWords := GetSelectWordsMap(cCtx)
 
 	var ipaRegex *regexp.Regexp
 	if flagIPARegex != "" {
@@ -253,22 +236,46 @@ func doPhonetics(cCtx *cli.Context) error {
 }
 
 func doDebug(cCtx *cli.Context) error {
-	flagCacheFilePath := cCtx.String("cache-file")
-	flagWordsFile := cCtx.String("words-file")
-	flagWords := cCtx.String("words")
-
-	entries := cache.LoadFromCacheFile(flagCacheFilePath)
-	selectWords := getSelectWordsMap(flagWords, flagWordsFile)
+	entries := LoadFromCacheFile(cCtx)
+	selectWords := GetSelectWordsMap(cCtx)
 
 	renderForDebug(entries, selectWords)
 	return nil
 }
 
+var localWordsFlag = &cli.StringFlag{
+	Name:  "words",
+	Usage: "limit words in csv",
+}
+var localWordsFileFlag = &cli.StringFlag{
+	Name:      "words-file",
+	TakesFile: true,
+	Usage:     "limit words by the given file",
+}
+
+var localOutFileFlag = &cli.StringFlag{
+	Name:    "out-file",
+	Aliases: []string{"o"},
+	Usage:   "output file",
+}
+
+var localOutDirFlag = &cli.StringFlag{
+	Name:    "out-dir",
+	Aliases: []string{"o"},
+	Usage:   "output directory",
+}
+
+func LoadFromCacheFile(cCtx *cli.Context) []*raw.Entry {
+	flagCacheFilePath := cCtx.String("cache-file")
+	entries := cache.LoadFromCacheFile(flagCacheFilePath)
+	return entries
+}
+
 func main() {
 	app := &cli.App{
-		Name:    "apple-dictionary-parser - a tool to parse and analyze MacOS's built-in dictionaries",
+		Name:    "apple-dictionary-parser",
 		Version: version,
-		Usage:   "make an explosive entrance",
+		Usage:   "a tool to parse and analyze MacOS's built-in dictionaries",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "cache-file",
@@ -300,20 +307,9 @@ func main() {
 				Name:  "text",
 				Usage: "Convert dictionary data into text format",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "words",
-						Usage: "limit words in csv",
-					},
-					&cli.StringFlag{
-						Name:      "words-file",
-						TakesFile: true,
-						Usage:     "limit words by the given file",
-					},
-					&cli.StringFlag{
-						Name:    "out-file",
-						Aliases: []string{"o"},
-						Usage:   "output file",
-					},
+					localWordsFlag,
+					localWordsFileFlag,
+					localOutFileFlag,
 				},
 				Action: doText,
 			},
@@ -321,20 +317,9 @@ func main() {
 				Name:  "html",
 				Usage: "Convert dictionary data into html format",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "words",
-						Usage: "limit words in csv",
-					},
-					&cli.StringFlag{
-						Name:      "words-file",
-						TakesFile: true,
-						Usage:     "limit words by the given file",
-					},
-					&cli.StringFlag{
-						Name:    "out-file",
-						Aliases: []string{"o"},
-						Usage:   "output file",
-					},
+					localWordsFlag,
+					localWordsFileFlag,
+					localOutFileFlag,
 				},
 				Action: doHTML,
 			},
@@ -342,20 +327,9 @@ func main() {
 				Name:  "html-split",
 				Usage: "Convert dictionary data into html format",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "words",
-						Usage: "limit words in csv",
-					},
-					&cli.StringFlag{
-						Name:      "words-file",
-						TakesFile: true,
-						Usage:     "limit words by the given file",
-					},
-					&cli.StringFlag{
-						Name:    "out-dir",
-						Aliases: []string{"o"},
-						Usage:   "output directory",
-					},
+					localWordsFlag,
+					localWordsFileFlag,
+					localOutDirFlag,
 				},
 				Action: doHTMLSplit,
 			},
@@ -363,23 +337,12 @@ func main() {
 				Name:  "phonetics",
 				Usage: "Convert dictionary data into html format",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "words",
-						Usage: "limit words in csv",
-					},
-					&cli.StringFlag{
-						Name:      "words-file",
-						TakesFile: true,
-						Usage:     "limit words by the given file",
-					},
-					&cli.StringFlag{
-						Name:    "out-file",
-						Aliases: []string{"o"},
-						Usage:   "output file",
-					},
+					localWordsFlag,
+					localWordsFileFlag,
+					localOutFileFlag,
 					&cli.StringFlag{Name: "ipa", Usage: "filter by IPA"},
 					&cli.StringFlag{Name: "ipa-regex", Usage: "filter by IPA in regular expression"},
-					&cli.IntFlag{Name: "min-syl", Value: 0, Usage: "min number of syllables"},
+					&cli.IntFlag{Name: "min-syl", Value: 1, Usage: "min number of syllables"},
 					&cli.IntFlag{Name: "max-syl", Value: 1000, Usage: "max number of syllables"},
 				},
 				Action: doPhonetics,
@@ -388,20 +351,9 @@ func main() {
 				Name:  "debug",
 				Usage: "debug",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "words",
-						Usage: "limit words in csv",
-					},
-					&cli.StringFlag{
-						Name:      "words-file",
-						TakesFile: true,
-						Usage:     "limit words by the given file",
-					},
-					&cli.StringFlag{
-						Name:    "out-file",
-						Aliases: []string{"o"},
-						Usage:   "output file",
-					},
+					localWordsFlag,
+					localWordsFileFlag,
+					localOutFileFlag,
 				},
 				Action: doDebug,
 			},
@@ -419,22 +371,13 @@ func main() {
 				Name:   "etym",
 				Usage:  "Output Etymology info",
 				Action: doEtym,
-				Flags: []cli.Flag{&cli.StringFlag{
-					Name:  "words",
-					Usage: "limit words in csv",
+				Flags: []cli.Flag{
+					localWordsFlag,
+					localWordsFileFlag,
 				},
-					&cli.StringFlag{
-						Name:      "words-file",
-						TakesFile: true,
-						Usage:     "limit words by the given file",
-					},
-					&cli.StringFlag{
-						Name:    "out-file",
-						Aliases: []string{"o"},
-						Usage:   "output file",
-					}},
 			},
-		}}
+		},
+	}
 	if err := app.Run(os.Args); err != nil {
 		panic(err)
 	}
@@ -446,7 +389,9 @@ func (mp SelectWords) EmptyOrMatch(w string) bool {
 	return len(mp) == 0 || mp[strings.ToLower(w)]
 }
 
-func getSelectWordsMap(csv string, file string) SelectWords {
+func GetSelectWordsMap(cCtx *cli.Context) SelectWords {
+	csv := cCtx.String("words")
+	file := cCtx.String("words-file")
 	words := getSelectWords(csv, file)
 	var mapWords = make(SelectWords, len(words))
 	for _, w := range words {
@@ -745,6 +690,10 @@ func (psel *PhoneticsSelector) Match(e *parser.Entry) bool {
 		return false
 	}
 
+	if e.NumSyll == 0 {
+		fmt.Fprintf(os.Stderr, "psel=%#v\n", psel)
+		panic("internal error")
+	}
 	if psel.IPA != "" {
 		return strings.Contains(e.IPA, psel.IPA)
 	}
@@ -759,7 +708,7 @@ func renderPhonetics(w io.Writer, entries []*raw.Entry, selectWords SelectWords,
 		if selectWords.EmptyOrMatch(ent.Title) {
 			e := parser.ParseEntry(ent.Title, ent.Body)
 			if psel.Match(e) {
-				fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
+				fmt.Fprintf(w, "%20s%  02d%20s%20s\n", e.Syll, e.NumSyll, e.Title, e.IPA)
 			}
 		}
 	}

@@ -39,4 +39,4 @@ clean:
 
 .PHONY: debug
 debug: $(CACHE) $(PROG)
-	$(PROG) debug --words=happiness,joy,felicity,pleasure,apple,mango,banana,fish
+	$(PROG) phonetics --ipa=æ --max-syl=1

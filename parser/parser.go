@@ -87,8 +87,12 @@ func ParseEntry(title string, body []byte) *Entry {
 		FFWords: ffwords,
 	}
 
-	et.NumSyll = strings.Count(et.Syll, "·") + 1
-
+	if strings.Contains(title, " ") || strings.Contains(title, "-") {
+		// Ignore syllable in compound words
+		et.NumSyll = 0
+	} else {
+		et.NumSyll = strings.Count(et.Syll, "·") + 1
+	}
 	return et
 }
 
