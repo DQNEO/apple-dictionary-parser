@@ -10,19 +10,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const shuffledArray = entriesArray.sort((a, b) => 0.5 - Math.random());
         let currentIndex = 0;
 
-        const it = setInterval(()=>{
-            // hide them all
-            entries.forEach((entry)=>{
-                entry.style.display = "none";
-            });
+        const eWidget = document.getElementById("widget")
+        eWidget.style.width = "20em";
+        eWidget.style.height = "5em";
 
-            const entry = shuffledArray[currentIndex++];
-            entry.style.display = "block";
+        const it = setInterval(()=>{
+            const current = shuffledArray[currentIndex];
+            current.style.display = "none";
+            currentIndex++;
             if  (currentIndex === shuffledArray.length) {
                 clearInterval(it);
                 alert("Finished");
+                entries.forEach((entry)=>{
+                    entry.style.display = "block";
+                });
+                eWidget.style.display = "none";
+                return;
             }
-        },3000);
+            const nextCurrent = shuffledArray[currentIndex];
+            eWidget.style.display = "block";
+            const word  = nextCurrent.attributes["d:title"].textContent;
+            eWidget.innerHTML = "<h1>" + word + "</h1>";
+            setTimeout(()=>{
+                eWidget.style.display = "none";
+                nextCurrent.style.display = "block";
+
+            }, 2000);
+        },5000);
 
     })
 });

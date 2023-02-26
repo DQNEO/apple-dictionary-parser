@@ -19,6 +19,7 @@ const htmlHeader = `<!doctype html>
 	<script>%s</script>
 </head>
 <body>
+<div id="widget" style="display:none;"></div>
 `
 
 //go:embed customize.css
