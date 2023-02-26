@@ -141,8 +141,8 @@ func doEtym(cCtx *cli.Context) error {
 	}
 
 	entries := LoadFromCacheFile(cCtx)
-	selectWords := GetSelectWordsMap(cCtx)
-	slice, mp := collectEtymology(entries, selectWords)
+	wordsFilter := GetWordsFilter(cCtx)
+	slice, mp := collectEtymology(entries, wordsFilter)
 	//println(len(slice), len(mp))
 	formatEtymologyToYAML(outDir, slice, mp)
 	formatEtymologyToHTML(outDir, slice, mp)
@@ -170,8 +170,8 @@ func doHTML(cCtx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	selectWords := GetSelectWordsMap(cCtx)
-	renderSingleHTML(defaultCssPath, oFile, entries, selectWords)
+	wordsFilter := GetWordsFilter(cCtx)
+	renderSingleHTML(defaultCssPath, oFile, entries, wordsFilter)
 	return nil
 }
 
@@ -186,8 +186,8 @@ func doHTMLSplit(cCtx *cli.Context) error {
 	if err != nil {
 		panic(err)
 	}
-	selectWords := GetSelectWordsMap(cCtx)
-	renderSplitHTML(defaultCssPath, flagOutFile, entries, selectWords)
+	wordsFilter := GetWordsFilter(cCtx)
+	renderSplitHTML(defaultCssPath, flagOutFile, entries, wordsFilter)
 	return nil
 }
 
@@ -200,9 +200,9 @@ func doText(cCtx *cli.Context) error {
 	}
 
 	entries := LoadFromCacheFile(cCtx)
-	selectWords := GetSelectWordsMap(cCtx)
+	wordsFilter := GetWordsFilter(cCtx)
 
-	renderText(oFile, entries, selectWords)
+	renderText(oFile, entries, wordsFilter)
 	return nil
 }
 
@@ -219,7 +219,7 @@ func doPhonetics(cCtx *cli.Context) error {
 
 	entries := LoadFromCacheFile(cCtx)
 	//parser.EtymDebugWriter = os.Stderr
-	selectWords := GetSelectWordsMap(cCtx)
+	wordsFilter := GetWordsFilter(cCtx)
 
 	var ipaRegex *regexp.Regexp
 	if flagIPARegex != "" {
@@ -231,15 +231,14 @@ func doPhonetics(cCtx *cli.Context) error {
 		MaxSyllables: flagMax,
 		MinSyllables: flagMin,
 	}
-	renderPhonetics(oFile, entries, selectWords, opt)
+	renderPhonetics(oFile, entries, wordsFilter, opt)
 	return nil
 }
 
 func doDebug(cCtx *cli.Context) error {
 	entries := LoadFromCacheFile(cCtx)
-	selectWords := GetSelectWordsMap(cCtx)
-
-	renderForDebug(entries, selectWords)
+	wordsFilter := GetWordsFilter(cCtx)
+	renderForDebug(entries, wordsFilter)
 	return nil
 }
 
@@ -383,17 +382,17 @@ func main() {
 	}
 }
 
-type SelectWords map[string]bool
+type WordsFilter map[string]bool
 
-func (mp SelectWords) EmptyOrMatch(w string) bool {
+func (mp WordsFilter) EmptyOrMatch(w string) bool {
 	return len(mp) == 0 || mp[strings.ToLower(w)]
 }
 
-func GetSelectWordsMap(cCtx *cli.Context) SelectWords {
+func GetWordsFilter(cCtx *cli.Context) WordsFilter {
 	csv := cCtx.String("words")
 	file := cCtx.String("words-file")
 	words := getSelectWords(csv, file)
-	var mapWords = make(SelectWords, len(words))
+	var mapWords = make(WordsFilter, len(words))
 	for _, w := range words {
 		if len(w) > 0 {
 			mapWords[strings.ToLower(w)] = true
@@ -429,7 +428,7 @@ func renderEntry(w io.Writer, title string, body []byte) {
 	fmt.Fprintln(w, closingTag)
 }
 
-func renderSplitHTML(defaultCssPath string, outDir string, entries []*raw.Entry, selectWords SelectWords) {
+func renderSplitHTML(defaultCssPath string, outDir string, entries []*raw.Entry, wordsFilter WordsFilter) {
 	var letters = [...]byte{'0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
 	var files = make(map[byte]*os.File) // e.g. "a" -> File("out/a.html")
 	for _, letter := range letters {
@@ -447,7 +446,7 @@ func renderSplitHTML(defaultCssPath string, outDir string, entries []*raw.Entry,
 		f.Write([]byte(GenHtmlHeader(htmlTitle, true, defaultCssPath)))
 	}
 	for _, ent := range entries {
-		if selectWords.EmptyOrMatch(ent.Title) {
+		if wordsFilter.EmptyOrMatch(ent.Title) {
 			t := ent.Title[0]
 			f, found := files[t]
 			if !found {
@@ -458,11 +457,11 @@ func renderSplitHTML(defaultCssPath string, outDir string, entries []*raw.Entry,
 	}
 }
 
-func renderSingleHTML(cssPath string, w io.Writer, entries []*raw.Entry, selectWords SelectWords) {
+func renderSingleHTML(cssPath string, w io.Writer, entries []*raw.Entry, wordsFilter WordsFilter) {
 	htmlTitle := "NOAD HTML as a single file"
 	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true, cssPath))
 	for _, ent := range entries {
-		if selectWords.EmptyOrMatch(ent.Title) {
+		if wordsFilter.EmptyOrMatch(ent.Title) {
 			renderEntry(w, ent.Title, ent.Body)
 		}
 	}
@@ -653,12 +652,12 @@ func formatEtymologyToYAML(outDir string, backEtymLinks []*BackEtymLink, forward
 	fileO2E.Close()
 }
 
-func collectEtymology(entries []*raw.Entry, selectWords SelectWords) ([]*BackEtymLink, EtymMap) {
+func collectEtymology(entries []*raw.Entry, wordsFilter WordsFilter) ([]*BackEtymLink, EtymMap) {
 	var forwardEtymMap = make(EtymMap, len(entries))
 	var allFF []string
 	var backEtymLinks []*BackEtymLink
 	for _, ent := range entries {
-		if selectWords.EmptyOrMatch(ent.Title) {
+		if wordsFilter.EmptyOrMatch(ent.Title) {
 			e := parser.ParseEntry(ent.Title, ent.Body)
 			if len(e.Etym) == 0 {
 				continue
@@ -703,9 +702,9 @@ func (psel *PhoneticsSelector) Match(e *parser.Entry) bool {
 	return true
 }
 
-func renderPhonetics(w io.Writer, entries []*raw.Entry, selectWords SelectWords, psel *PhoneticsSelector) {
+func renderPhonetics(w io.Writer, entries []*raw.Entry, wordsFilter WordsFilter, psel *PhoneticsSelector) {
 	for _, ent := range entries {
-		if selectWords.EmptyOrMatch(ent.Title) {
+		if wordsFilter.EmptyOrMatch(ent.Title) {
 			e := parser.ParseEntry(ent.Title, ent.Body)
 			if psel.Match(e) {
 				fmt.Fprintf(w, "%20s%  02d%20s%20s\n", e.Syll, e.NumSyll, e.Title, e.IPA)
@@ -714,18 +713,18 @@ func renderPhonetics(w io.Writer, entries []*raw.Entry, selectWords SelectWords,
 	}
 }
 
-func renderForDebug(entries []*raw.Entry, selectWords SelectWords) {
+func renderForDebug(entries []*raw.Entry, wordsFilter WordsFilter) {
 	for _, ent := range entries {
-		if selectWords.EmptyOrMatch(ent.Title) {
+		if wordsFilter.EmptyOrMatch(ent.Title) {
 			e := parser.ParseEntry(ent.Title, ent.Body)
 			fmt.Fprintf(os.Stdout, "%s\t%d\t%s\t%s\n", e.Title, e.NumSyll, e.Syll, e.IPA)
 		}
 	}
 }
 
-func renderText(w io.Writer, entries []*raw.Entry, selectWords SelectWords) {
+func renderText(w io.Writer, entries []*raw.Entry, wordsFilter WordsFilter) {
 	for _, ent := range entries {
-		if selectWords.EmptyOrMatch(ent.Title) {
+		if wordsFilter.EmptyOrMatch(ent.Title) {
 			et := parser.ParseEntry(ent.Title, ent.Body)
 			s := ToOneline(et)
 			fmt.Fprintln(w, s)
