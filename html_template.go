@@ -16,12 +16,16 @@ const htmlHeader = `<!doctype html>
 
     %s
 
+	<script>%s</script>
 </head>
 <body>
 `
 
 //go:embed customize.css
 var customCss string
+
+//go:embed myapp.js
+var javaScriptExample string
 
 func GetInternalCssBlock(defaultCssPath string) string {
 	defaultCss, err := os.ReadFile(defaultCssPath)
@@ -37,14 +41,14 @@ func GetExternalCssBlock() string {
     <link rel="stylesheet" href="customize.css">`
 }
 
-func GenHtmlHeader(title string, inlineCss bool, defaultCssPath string) string {
+func GenHtmlHeader(title string, inlineCss bool, defaultCssPath string, javaScript string) string {
 	var cssBlock string
 	if inlineCss {
 		cssBlock = GetInternalCssBlock(defaultCssPath)
 	} else {
 		cssBlock = GetExternalCssBlock()
 	}
-	return fmt.Sprintf(htmlHeader, title, cssBlock)
+	return fmt.Sprintf(htmlHeader, title, cssBlock, javaScript)
 }
 
 const htmlFooter = `</body>

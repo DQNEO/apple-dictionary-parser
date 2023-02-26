@@ -477,7 +477,7 @@ func renderSplitHTML(defaultCssPath string, outDir string, entries []*raw.Entry,
 		}(f)
 		files[letter] = f
 		htmlTitle := "NOAD - " + strings.ToUpper(string(letter))
-		f.Write([]byte(GenHtmlHeader(htmlTitle, true, defaultCssPath)))
+		f.Write([]byte(GenHtmlHeader(htmlTitle, true, defaultCssPath, javaScriptExample)))
 	}
 	for _, ent := range entries {
 		if wordsFilter.EmptyOrMatch(ent.Title) {
@@ -493,7 +493,7 @@ func renderSplitHTML(defaultCssPath string, outDir string, entries []*raw.Entry,
 
 func renderSingleHTML(cssPath string, w io.Writer, entries []*raw.Entry, wordsFilter WordsFilter) {
 	htmlTitle := "NOAD HTML as a single file"
-	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true, cssPath))
+	fmt.Fprintln(w, GenHtmlHeader(htmlTitle, true, cssPath, javaScriptExample))
 	for _, ent := range entries {
 		if wordsFilter.EmptyOrMatch(ent.Title) {
 			renderEntry(w, ent.Title, ent.Body)

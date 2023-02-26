@@ -4,7 +4,7 @@ OUT_DIR := /tmp/adp
 
 all: $(PROG) $(OUT_DIR)/groups/a.html $(OUT_DIR)/noad.sample1.html $(OUT_DIR)/noad.sample2.html $(OUT_DIR)/noad.txt
 
-$(PROG): *.go cache/* extracter/*/* finder/* parser/* go.mod customize.css
+$(PROG): *.go cache/* extracter/*/* finder/* parser/* go.mod customize.css myapp.js
 	go build
 
 $(CACHE): cache/* extracter/*/* finder/*
