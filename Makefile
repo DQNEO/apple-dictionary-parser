@@ -39,4 +39,4 @@ clean:
 
 .PHONY: debug
 debug: $(CACHE) $(PROG)
-	$(PROG) phonetics --ipa=æ --max-syl=1
+	$(PROG) phonetics --word-regex='cally$$'

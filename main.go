@@ -242,6 +242,10 @@ func doDebug(cCtx *cli.Context) error {
 	return nil
 }
 
+var localWordRegexpFlag = &cli.StringFlag{
+	Name:  "word-regex",
+	Usage: "limit words in csv",
+}
 var localWordsFlag = &cli.StringFlag{
 	Name:  "words",
 	Usage: "limit words in csv",
@@ -308,6 +312,7 @@ func main() {
 				Flags: []cli.Flag{
 					localWordsFlag,
 					localWordsFileFlag,
+					localWordRegexpFlag,
 					localOutFileFlag,
 				},
 				Action: doText,
@@ -318,6 +323,7 @@ func main() {
 				Flags: []cli.Flag{
 					localWordsFlag,
 					localWordsFileFlag,
+					localWordRegexpFlag,
 					localOutFileFlag,
 				},
 				Action: doHTML,
@@ -328,6 +334,7 @@ func main() {
 				Flags: []cli.Flag{
 					localWordsFlag,
 					localWordsFileFlag,
+					localWordRegexpFlag,
 					localOutDirFlag,
 				},
 				Action: doHTMLSplit,
@@ -338,6 +345,7 @@ func main() {
 				Flags: []cli.Flag{
 					localWordsFlag,
 					localWordsFileFlag,
+					localWordRegexpFlag,
 					localOutFileFlag,
 					&cli.StringFlag{Name: "ipa", Usage: "filter by IPA"},
 					&cli.StringFlag{Name: "ipa-regex", Usage: "filter by IPA in regular expression"},
@@ -352,6 +360,7 @@ func main() {
 				Flags: []cli.Flag{
 					localWordsFlag,
 					localWordsFileFlag,
+					localWordRegexpFlag,
 					localOutFileFlag,
 				},
 				Action: doDebug,
@@ -373,6 +382,7 @@ func main() {
 				Flags: []cli.Flag{
 					localWordsFlag,
 					localWordsFileFlag,
+					localWordRegexpFlag,
 				},
 			},
 		},
@@ -382,23 +392,47 @@ func main() {
 	}
 }
 
-type WordsFilter map[string]bool
+type WordsFilter struct {
+	// Either of regexp or mp is set, or both are nil
+	regexp *regexp.Regexp
+	mp     map[string]bool
+}
 
-func (mp WordsFilter) EmptyOrMatch(w string) bool {
-	return len(mp) == 0 || mp[strings.ToLower(w)]
+func (wf WordsFilter) EmptyOrMatch(w string) bool {
+	if len(wf.mp) > 0 {
+		return wf.mp[strings.ToLower(w)]
+	}
+
+	if wf.regexp != nil {
+		return wf.regexp.MatchString(w)
+	}
+
+	return true // empty
 }
 
 func GetWordsFilter(cCtx *cli.Context) WordsFilter {
+	var wf WordsFilter
+	regex := cCtx.String("word-regex")
+	if regex != "" {
+		r := regexp.MustCompile(regex)
+		wf.regexp = r
+	}
 	csv := cCtx.String("words")
 	file := cCtx.String("words-file")
 	words := getSelectWords(csv, file)
-	var mapWords = make(WordsFilter, len(words))
-	for _, w := range words {
-		if len(w) > 0 {
-			mapWords[strings.ToLower(w)] = true
+	if words != nil {
+		if regex != "" {
+			panic("invalid argument: you cannot specify multiple word options at the same time")
 		}
+		var mapWords = make(map[string]bool, len(words))
+		for _, w := range words {
+			if len(w) > 0 {
+				mapWords[strings.ToLower(w)] = true
+			}
+		}
+		wf.mp = mapWords
 	}
-	return mapWords
+	return wf
 }
 
 func getSelectWords(csv string, file string) []string {
