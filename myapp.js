@@ -6,8 +6,12 @@ class App {
     }
     showQuestion() {
         const entry = this.entries[this.currentIndex];
-        const word = entry.attributes["d:title"].textContent;
-        this.eWidget.innerHTML = `<span class="entry"><span class="hg x_xh0"><span class="hw">${word}</span></span></span>`;
+        while (this.eWidget.firstChild) {
+            this.eWidget.removeChild(this.eWidget.firstChild);
+        }
+        const eHG = entry.getElementsByClassName("hg")[0];
+        const clonedHG = eHG.cloneNode(true);
+        this.eWidget.appendChild(clonedHG);
         this.eWidget.style.display = "block";
     }
     init() {
@@ -18,18 +22,16 @@ class App {
             entry.style.display = "none";
         });
 
-        const shuffledArray = Array.from(entries).sort((a, b) => 0.5 - Math.random());
-        this.entries = shuffledArray;
+        this.entries = Array.from(entries).sort((a, b) => 0.5 - Math.random());
         this.currentIndex = 0;
 
         this.eWidget = document.getElementById("widget")
-        this.eWidget.style.marginTop = "1em";
+        this.eWidget.className = "entry";
         this.eWidget.style.borderTop = "1px solid #909090";
-        this.eWidget.fontSize = "84%";
-        this.eWidget.lineHeight = "130%";
         this.eWidget.innerHTML = `<h1>Quiz</h1>`
         this.eWidget.style.display = "block";
         this.status = "";
+
         document.onclick = () => {
             switch (this.status) {
                 case "":
