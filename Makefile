@@ -41,7 +41,7 @@ clean:
 debug: $(CACHE) $(PROG)
 	$(PROG) phonetics --word-regex='cally$$'
 
-/tmp/adp/my/a.html: $(PROG) mywords.txt
+/tmp/adp/my/a.html: $(CACHE) $(PROG) mywords.txt
 	rm -rf /tmp/adp/my/*
 	mkdir -p /tmp/adp/my
 	$(PROG) html-split --words-file=mywords.txt --out-dir /tmp/adp/my
