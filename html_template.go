@@ -20,6 +20,7 @@ const htmlHeader = `<!doctype html>
 </head>
 <body>
 <div id="widget" style="display:none;"></div>
+<div id="widget-starter" style="float:right;"><a id="widget-starter-button" href="javascript:void(0);">*</a></div>
 `
 
 //go:embed customize.css

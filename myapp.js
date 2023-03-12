@@ -16,6 +16,7 @@ class App {
     }
     init() {
         this.running = true;
+        document.getElementById("widget-starter").style.display = "none";
         const entries = document.querySelectorAll(".entry");
         // hide them all
         entries.forEach((entry) => {
@@ -76,7 +77,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         app.init();
-    })
+    });
+    document.getElementById('widget-starter-button').addEventListener("click", ()=>{
+        if (app.running) {
+            return;
+        }
+        app.init();
+    });
 });
-
 
