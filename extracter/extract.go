@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
-	"github.com/DQNEO/apple-dictionary-parser/extracter/raw"
 	"io"
 	"os"
 	"unsafe"
+
+	"github.com/DQNEO/apple-dictionary-parser/extracter/raw"
 )
 
 func check(err error) {
@@ -25,13 +26,12 @@ func parseBinaryFile(filePath string) [][]byte {
 	br := bytes.NewReader(data)
 	_, err = br.Seek(0x40, io.SeekStart)
 	check(err)
-	fmt.Printf("initial 0x40 bytes skipped\n")
+
 	// read the entire binary size
 	var limitMarker = make([]byte, 4, 4)
 	_, err = br.Read(limitMarker)
 	check(err)
 	var limitP = (*int32)(unsafe.Pointer(&limitMarker[0]))
-	fmt.Printf("limit = %d\n", *limitP)
 
 	_, err = br.Seek(0x60, io.SeekStart)
 	check(err)
@@ -41,11 +41,9 @@ func parseBinaryFile(filePath string) [][]byte {
 		pos, err := br.Seek(0, io.SeekCurrent)
 		check(err)
 		if pos >= int64(*limitP)+0x40 {
-			fmt.Printf("=====  read all blocks\n")
 			return chunks
 		}
 		blockIdx++
-		fmt.Printf("=====  blockIdx %d, position %d\n", blockIdx, pos)
 		var blockSizeBin = make([]byte, 4, 4)
 		_, err = br.Read(blockSizeBin)
 		if err == io.EOF {
@@ -56,7 +54,7 @@ func parseBinaryFile(filePath string) [][]byte {
 		if *sz == 0 {
 			panic("block size is zero")
 		}
-		fmt.Printf("  block size = %d\n", *sz)
+
 		var body = make([]byte, *sz)
 		_, err = br.Read(body)
 		check(err)
@@ -71,7 +69,6 @@ func parseBinaryFile(filePath string) [][]byte {
 			entryId++
 			var chunkSizeP *int32 = (*int32)(unsafe.Pointer(&buf[chunkPos]))
 			chunkPos += 4
-			fmt.Printf("[entryId]: chunkSize = [%d]:%d\n", entryId, *chunkSizeP)
 			entry := buf[chunkPos : chunkPos+int(*chunkSizeP)]
 			chunks = append(chunks, entry)
 			chunkPos += int(*chunkSizeP)
@@ -103,14 +100,11 @@ const titleStartMarker = `d:title="`
 func parseEntry(entry []byte) *raw.Entry {
 	titleStart := bytes.Index(entry, []byte(titleStartMarker)) + len(titleStartMarker)
 	titleLen := bytes.Index(entry[titleStart:], []byte(`"`))
-	fmt.Printf("entry titleStart, titleLen: %d, %d\n", titleStart, titleLen)
 	if titleLen == 0 || titleLen == -1 {
 		return nil
 	}
-	fmt.Printf("@@@: %s@@@\n", string(entry))
 
 	title := entry[titleStart : titleStart+titleLen]
-	fmt.Printf("entry title: %s\n", title)
 
 	return &raw.Entry{
 		Title: string(title),
@@ -121,11 +115,7 @@ func parseEntry(entry []byte) *raw.Entry {
 func ParseBinaryFile(filePath string) []*raw.Entry {
 	var entries []*raw.Entry
 	rawEntries := parseBinaryFile(filePath)
-	fmt.Printf("len(rawEntries)=%d\n", len(rawEntries))
-	for eid, rawEntry := range rawEntries {
-		fmt.Printf(" entry_id %d\n", eid)
-		//rawEntries := rawEntry //parseChunk(rawEntry)
-		//for _, rawEntry := range rawEntry {
+	for _, rawEntry := range rawEntries {
 		e := parseEntry(rawEntry)
 		if e != nil {
 			entries = append(entries, e)
