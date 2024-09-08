@@ -79,30 +79,13 @@ func parseBinaryFile(filePath string) [][]byte {
 	}
 }
 
-func parseChunk(buf []byte) [][]byte {
-	var entries [][]byte
-	buf = buf[4:]
-	for {
-		idx := bytes.IndexByte(buf, '\n')
-		if idx > -1 {
-			entry := buf[0:idx]
-			entries = append(entries, entry)
-			if idx+5 >= len(buf) {
-				return entries
-			}
-			buf = buf[idx+5:]
-		} else {
-			return entries
-		}
-	}
-}
-
 const titleStartMarker = `d:title="`
 
 func parseEntry(entry []byte) *raw.Entry {
 	titleStart := bytes.Index(entry, []byte(titleStartMarker)) + len(titleStartMarker)
 	titleLen := bytes.Index(entry[titleStart:], []byte(`"`))
 	if titleLen == 0 || titleLen == -1 {
+		// irregular entries whose title is empty
 		return nil
 	}
 
@@ -118,10 +101,12 @@ func ParseBinaryFile(filePath string) []*raw.Entry {
 	var entries []*raw.Entry
 	rawEntries := parseBinaryFile(filePath)
 	for _, rawEntry := range rawEntries {
-		e := parseEntry(rawEntry)
-		if e != nil {
-			entries = append(entries, e)
+		entry := parseEntry(rawEntry)
+		if entry == nil {
+			// ignore irregular entries
+			continue
 		}
+		entries = append(entries, entry)
 	}
 	return entries
 }
