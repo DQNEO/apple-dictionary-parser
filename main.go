@@ -46,7 +46,7 @@ func doDump(cCtx *cli.Context) error {
 		if bodyFilePath == "" {
 			panic("File not bodyFilePath")
 		}
-		fmt.Printf("Dictionary file is bodyFilePath at '%s'\n", bodyFilePath)
+		fmt.Printf("Dictionary file is found at '%s'\n", bodyFilePath)
 		dictFilePath = bodyFilePath
 	} else {
 		dictFilePath = flagDictFilePath
