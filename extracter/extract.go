@@ -20,10 +20,9 @@ func check(err error) {
 // Logic is borrowed from here: https://gist.github.com/josephg/5e134adf70760ee7e49d?permalink_comment_id=4554558#gistcomment-4554558
 func parseBinaryFile(filePath string) [][]byte {
 	var entries [][]byte
-	r, err := os.Open(filePath)
+	data, err := os.ReadFile(filePath)
 	check(err)
-	defer r.Close()
-
+	r := bytes.NewReader(data)
 	_, err = r.Seek(0x40, io.SeekStart)
 	check(err)
 
