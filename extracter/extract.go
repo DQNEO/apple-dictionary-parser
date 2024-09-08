@@ -69,12 +69,12 @@ func parseBinaryFile(filePath string) [][]byte {
 		chunkPos := 0
 		for chunkPos < len(buf) {
 			entryId++
-			var chunkSize *int32 = (*int32)(unsafe.Pointer(&buf[chunkPos]))
+			var chunkSizeP *int32 = (*int32)(unsafe.Pointer(&buf[chunkPos]))
 			chunkPos += 4
-			fmt.Printf("[entryId]: chunkSize = [%d]:%d\n", entryId, *chunkSize)
-			entry := buf[chunkPos : chunkPos+int(*chunkSize)]
+			fmt.Printf("[entryId]: chunkSize = [%d]:%d\n", entryId, *chunkSizeP)
+			entry := buf[chunkPos : chunkPos+int(*chunkSizeP)]
 			chunks = append(chunks, entry)
-			chunkPos += int(*chunkSize)
+			chunkPos += int(*chunkSizeP)
 		}
 		r.Close()
 	}
@@ -103,7 +103,14 @@ const titleStartMarker = `d:title="`
 func parseEntry(entry []byte) *raw.Entry {
 	titleStart := bytes.Index(entry, []byte(titleStartMarker)) + len(titleStartMarker)
 	titleLen := bytes.Index(entry[titleStart:], []byte(`"`))
+	fmt.Printf("entry titleStart, titleLen: %d, %d\n", titleStart, titleLen)
+	if titleLen == 0 || titleLen == -1 {
+		return nil
+	}
+	fmt.Printf("@@@: %s@@@\n", string(entry))
+
 	title := entry[titleStart : titleStart+titleLen]
+	fmt.Printf("entry title: %s\n", title)
 
 	return &raw.Entry{
 		Title: string(title),
@@ -115,16 +122,16 @@ var LastTitle = "°"
 
 func ParseBinaryFile(filePath string) []*raw.Entry {
 	var entries []*raw.Entry
-	chunks := parseBinaryFile(filePath)
-	for _, chunk := range chunks {
-		rawEntries := parseChunk(chunk)
-		for _, rawEntry := range rawEntries {
-			e := parseEntry(rawEntry)
+	rawEntries := parseBinaryFile(filePath)
+	fmt.Printf("len(rawEntries)=%d\n", len(rawEntries))
+	for eid, rawEntry := range rawEntries {
+		fmt.Printf(" entry_id %d\n", eid)
+		//rawEntries := rawEntry //parseChunk(rawEntry)
+		//for _, rawEntry := range rawEntry {
+		e := parseEntry(rawEntry)
+		if e != nil {
 			entries = append(entries, e)
-			if e.Title == LastTitle {
-				return entries
-			}
 		}
 	}
-	panic("internal error (probably last title does not match what we expect")
+	return entries
 }
