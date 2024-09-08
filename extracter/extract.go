@@ -20,32 +20,30 @@ func check(err error) {
 // Logic is borrowed from here: https://gist.github.com/josephg/5e134adf70760ee7e49d?permalink_comment_id=4554558#gistcomment-4554558
 func parseBinaryFile(filePath string) [][]byte {
 	var chunks [][]byte
-
-	data, err := os.ReadFile(filePath)
+	r, err := os.Open(filePath)
 	check(err)
-	br := bytes.NewReader(data)
-	_, err = br.Seek(0x40, io.SeekStart)
+	_, err = r.Seek(0x40, io.SeekStart)
 	check(err)
 
 	// read the entire binary size
 	var limitMarker = make([]byte, 4, 4)
-	_, err = br.Read(limitMarker)
+	_, err = r.Read(limitMarker)
 	check(err)
 	var limitP = (*int32)(unsafe.Pointer(&limitMarker[0]))
 
-	_, err = br.Seek(0x60, io.SeekStart)
+	_, err = r.Seek(0x60, io.SeekStart)
 	check(err)
 	var entryId int
 	var blockIdx int
 	for {
-		pos, err := br.Seek(0, io.SeekCurrent)
+		pos, err := r.Seek(0, io.SeekCurrent)
 		check(err)
 		if pos >= int64(*limitP)+0x40 {
 			return chunks
 		}
 		blockIdx++
 		var blockSizeBin = make([]byte, 4, 4)
-		_, err = br.Read(blockSizeBin)
+		_, err = r.Read(blockSizeBin)
 		if err == io.EOF {
 			fmt.Printf("reached EOF\n")
 			return chunks
@@ -56,7 +54,7 @@ func parseBinaryFile(filePath string) [][]byte {
 		}
 
 		var body = make([]byte, *sz)
-		_, err = br.Read(body)
+		_, err = r.Read(body)
 		check(err)
 
 		btsr := bytes.NewReader(body[8:])
