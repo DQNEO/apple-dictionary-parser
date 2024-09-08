@@ -7,7 +7,7 @@ all: $(PROG) $(OUT_DIR)/groups/a.html $(OUT_DIR)/noad.sample1.html $(OUT_DIR)/no
 $(PROG): *.go cache/* extracter/*/* finder/* parser/* go.mod customize.css myapp.js
 	go build
 
-$(CACHE): cache/* extracter/*/* finder/*
+$(CACHE): $(PROG) cache/* extracter/*/* finder/*
 	 $(PROG) dump
 	mkdir -p $(OUT_DIR)
 
