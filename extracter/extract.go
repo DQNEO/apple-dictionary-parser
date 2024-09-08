@@ -118,8 +118,6 @@ func parseEntry(entry []byte) *raw.Entry {
 	}
 }
 
-var LastTitle = "°"
-
 func ParseBinaryFile(filePath string) []*raw.Entry {
 	var entries []*raw.Entry
 	rawEntries := parseBinaryFile(filePath)
