@@ -49,6 +49,18 @@ apple-dictionary-parser html-split --out-dir /tmp/
 
 This generates a.html, b.html, ..., z.html files in a given directory.
 
+### Useful options to filter words
+
+If you want to filter words to extract, you can use filtering options such as `--words` or `--words-file`
+
+```
+apple-dictionary-parser text --words=--words=happiness,joy,pleasure > /tmp/selected-words.txt
+
+apple-dictionary-parser text --words-file=your-words.txt > /tmp/selected-words.txt
+```
+
+These filtering options are applicable to `text`, `html` and `html-split` subcommands.
+
 ## Analyze etymology data
 
 ```
