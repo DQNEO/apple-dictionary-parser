@@ -44,5 +44,5 @@ debug: $(CACHE) $(PROG)
 /tmp/adp/my/a.html: $(CACHE) $(PROG) mywords.txt
 	rm -rf /tmp/adp/my/*
 	mkdir -p /tmp/adp/my
-	$(PROG) html-split --words-file=mywords.txt --out-dir /tmp/adp/my
+	$(PROG) html-split --words-file=words-sample.txt --out-dir /tmp/adp/my
 	open /tmp/adp/my

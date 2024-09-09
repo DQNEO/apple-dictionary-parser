@@ -10,6 +10,9 @@ Currently only "New Oxford American Dictionary" is supported.
 go install github.com/DQNEO/apple-dictionary-parser@latest
 ```
 
+The command line tool `apple-dictionary-parser ` will be installed in your `$GOPATH/bin` directory.
+
+
 # Usage
 
 ## Export dictionary contents in raw format
@@ -30,20 +33,33 @@ If you are just interested in the raw contents of the dictionary and want to pro
 
 ## Export dictionary contents into a text file
 ```
-apple-dictionary-parser text /tmp/all.txt
+apple-dictionary-parser text > /tmp/all-words.txt
 ```
 
 ## Export dictionary contents into a HTML file
 ```
-apple-dictionary-parser html  /tmp/all.html
+apple-dictionary-parser html > /tmp/all-words.html
 ```
 
 ## Export dictionary contents into alphabetically separated HTML files
+
 ```
-apple-dictionary-parser htmlsplit /tmp/
+apple-dictionary-parser html-split --out-dir /tmp/
 ```
 
 This generates a.html, b.html, ..., z.html files in a given directory.
+
+### Useful options to filter words
+
+If you want to filter words to extract, you can use filtering options such as `--words` or `--words-file`
+
+```
+apple-dictionary-parser text --words=--words=happiness,joy,pleasure > /tmp/selected-words.txt
+
+apple-dictionary-parser text --words-file=your-words.txt > /tmp/selected-words.txt
+```
+
+These filtering options are applicable to `text`, `html` and `html-split` subcommands.
 
 ## Analyze etymology data
 
