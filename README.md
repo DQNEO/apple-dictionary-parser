@@ -39,8 +39,9 @@ apple-dictionary-parser html  /tmp/all.html
 ```
 
 ## Export dictionary contents into alphabetically separated HTML files
+
 ```
-apple-dictionary-parser htmlsplit /tmp/
+apple-dictionary-parser html-split --words-file=words-sample.txt --out-dir /tmp/ 
 ```
 
 This generates a.html, b.html, ..., z.html files in a given directory.
