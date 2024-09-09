@@ -33,18 +33,18 @@ If you are just interested in the raw contents of the dictionary and want to pro
 
 ## Export dictionary contents into a text file
 ```
-apple-dictionary-parser text /tmp/all.txt
+apple-dictionary-parser text > /tmp/all-words.txt
 ```
 
 ## Export dictionary contents into a HTML file
 ```
-apple-dictionary-parser html  /tmp/all.html
+apple-dictionary-parser html > /tmp/all-words.html
 ```
 
 ## Export dictionary contents into alphabetically separated HTML files
 
 ```
-apple-dictionary-parser html-split --words-file=words-sample.txt --out-dir /tmp/ 
+apple-dictionary-parser html-split --out-dir /tmp/
 ```
 
 This generates a.html, b.html, ..., z.html files in a given directory.
