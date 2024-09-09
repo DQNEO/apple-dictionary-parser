@@ -10,6 +10,9 @@ Currently only "New Oxford American Dictionary" is supported.
 go install github.com/DQNEO/apple-dictionary-parser@latest
 ```
 
+The command line tool `apple-dictionary-parser ` will be installed in your `$GOPATH/bin` directory.
+
+
 # Usage
 
 ## Export dictionary contents in raw format
