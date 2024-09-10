@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-const version = "v0.0.5"
+const version = "v0.0.7"
 
 func doVersion(cCtx *cli.Context) error {
 	fmt.Println("apple-dictionary-parser version " + version)
