@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/DQNEO/apple-dictionary-parser/cache"
 	"github.com/DQNEO/apple-dictionary-parser/extracter"
@@ -206,6 +207,22 @@ func doText(cCtx *cli.Context) error {
 	return nil
 }
 
+func doJson(cCtx *cli.Context) error {
+	flagOutFile := cCtx.String("out-file")
+
+	oFile, err := createOutFile(flagOutFile)
+	if err != nil {
+		return err
+	}
+
+	entries := LoadFromCacheFile(cCtx)
+	wordsFilter := GetWordsFilter(cCtx)
+
+	renderJson(oFile, entries, wordsFilter)
+	return nil
+
+}
+
 func doPhonetics(cCtx *cli.Context) error {
 	var flagIPA = cCtx.String("ipa")
 	var flagIPARegex = cCtx.String("ipa-regex")
@@ -318,6 +335,17 @@ func main() {
 				Action: doText,
 			},
 			{
+				Name:  "json",
+				Usage: "Convert dictionary data into json format",
+				Flags: []cli.Flag{
+					localWordsFlag,
+					localWordsFileFlag,
+					localWordRegexpFlag,
+					localOutFileFlag,
+				},
+				Action: doJson,
+			},
+			{
 				Name:  "html",
 				Usage: "Convert dictionary data into html format",
 				Flags: []cli.Flag{
@@ -330,7 +358,7 @@ func main() {
 			},
 			{
 				Name:  "html-split",
-				Usage: "Convert dictionary data into html format",
+				Usage: "Convert dictionary data into separate html files",
 				Flags: []cli.Flag{
 					localWordsFlag,
 					localWordsFileFlag,
@@ -341,7 +369,7 @@ func main() {
 			},
 			{
 				Name:  "phonetics",
-				Usage: "Convert dictionary data into html format",
+				Usage: "extract phonetics data",
 				Flags: []cli.Flag{
 					localWordsFlag,
 					localWordsFileFlag,
@@ -764,6 +792,24 @@ func renderText(w io.Writer, entries []*raw.Entry, wordsFilter WordsFilter) {
 			s := ToOneline(et)
 			fmt.Fprintln(w, s)
 		}
+	}
+}
+
+func renderJson(w io.Writer, entries []*raw.Entry, wordsFilter WordsFilter) {
+	var parsedEntries []*parser.Entry
+	for _, ent := range entries {
+		if wordsFilter.EmptyOrMatch(ent.Title) {
+			et := parser.ParseEntry(ent.Title, ent.Body)
+			parsedEntries = append(parsedEntries, et)
+		}
+	}
+	bytes, err := json.Marshal(parsedEntries)
+	if err != nil {
+		panic(err)
+	}
+	_, err = w.Write(bytes)
+	if err != nil {
+		panic(err)
 	}
 }
 

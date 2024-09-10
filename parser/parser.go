@@ -8,18 +8,18 @@ import (
 )
 
 type Entry struct {
-	Title   string
-	Syll    string
-	NumSyll int
-	IPA     string
-	SG      string
-	Phr     string
-	Phv     string
-	Drv     string
-	Etym    Etymology
-	Note    string
+	Title   string    `json:"title"`
+	Syll    string    `json:"syllable"`
+	NumSyll int       `json:"num_syllable"`
+	IPA     string    `json:"ipa"`
+	SG      string    `json:"meaning"`
+	Phr     string    `json:"phrases"`
+	Phv     string    `json:"phrasal_verbs"`
+	Drv     string    `json:"derivatives"`
+	Etym    Etymology `json:"etymolgy"`
+	Note    string    `json:"note"`
 
-	FFWords []string
+	FFWords []string `json:"ff_words"`
 }
 
 type EtymChunk string

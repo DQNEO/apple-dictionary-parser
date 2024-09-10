@@ -36,6 +36,11 @@ If you are just interested in the raw contents of the dictionary and want to pro
 $ apple-dictionary-parser text > /tmp/all-words.txt
 ```
 
+## Export dictionary contents into a json file
+```
+$ apple-dictionary-parser json > /tmp/all-words.json
+```
+
 ## Export dictionary contents into a HTML file
 ```
 $ apple-dictionary-parser html > /tmp/all-words.html
