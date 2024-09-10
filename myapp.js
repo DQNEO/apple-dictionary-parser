@@ -72,12 +72,6 @@ class App {
 const app = new App();
 
 document.addEventListener('DOMContentLoaded', function () {
-    document.addEventListener("dblclick", event => {
-        if (app.running) {
-            return;
-        }
-        app.init();
-    });
     document.getElementById('widget-starter-button').addEventListener("click", ()=>{
         if (app.running) {
             return;
