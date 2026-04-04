@@ -12,6 +12,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
+          cache: true
           go-version-file: go.mod
           check-latest: true
 
