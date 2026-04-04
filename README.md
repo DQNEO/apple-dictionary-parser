@@ -59,7 +59,7 @@ This generates a.html, b.html, ..., z.html files in a given directory.
 If you want to filter words to extract, you can use filtering options such as `--words` or `--words-file`
 
 ```
-$ apple-dictionary-parser text --words=--words=happiness,joy,pleasure
+$ apple-dictionary-parser text --words=happiness,joy,pleasure
 
 $ apple-dictionary-parser html --words-file=your-words.txt
 ```
