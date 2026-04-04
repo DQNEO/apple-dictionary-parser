@@ -1,6 +1,6 @@
 module github.com/DQNEO/apple-dictionary-parser
 
-go 1.19
+go 1.26
 
 require (
 	github.com/beevik/etree v1.1.0 // indirect
